@@ -149,7 +149,7 @@ function popupContent(marker: SarprasMarker) {
             <p class="mt-1 text-xs text-zinc-500">${escapeHtml([marker.village, marker.district, marker.city, marker.province].filter(Boolean).join(', '))}</p>
             <h5 class="col-span-4 font-semibold text-zinc-600 text-center my-2 text-base">Detail Sarpras</h5><h5 class="col-span-2 font-semibold text-right"></h5>
             <p>Total sarpras per-KDKMP: <span class="font-semibold text-emerald-600">${countedSarprases}</span> / <span class="font-semibold text-red-600">${sarprasItems.length - 1}</span></p>
-            <small>* setiap kdkmp hanya perlu salah satu dari item ini Internet / Starlink</small>
+            <small>* setiap kdkmp hanya perlu salah satu dari item ini : Internet / Starlink</small>
             <div class="mt-3 grid grid-cols-4 gap-2 text-xs">
                 ${statusCards}
             </div>
@@ -304,6 +304,7 @@ export function IndonesiaMap({
     const mapElement = useRef<HTMLDivElement | null>(null);
     const map = useRef<L.Map | null>(null);
     const markerLayer = useRef<L.LayerGroup | null>(null);
+    const hasFitInitialBounds = useRef(false);
     const [filters, setFilters] = useState<FilterState>({ query: '', provinceId: '', cityId: '', districtId: '', villageId: '' });
     const [cities, setCities] = useState<RegionOption[]>([]);
     const [districts, setDistricts] = useState<RegionOption[]>([]);
@@ -412,6 +413,22 @@ export function IndonesiaMap({
                 .bindPopup(popupContent(marker), { maxWidth: 360 })
                 .addTo(markerLayer.current!);
         });
+
+        if (!hasFitInitialBounds.current && filtered.length > 0) {
+            hasFitInitialBounds.current = true;
+
+            if (filtered.length === 1) {
+                map.current.setView([filtered[0].latitude, filtered[0].longitude], 12);
+                return;
+            }
+
+            const bounds = L.latLngBounds(filtered.map((marker) => [marker.latitude, marker.longitude] as [number, number]));
+            map.current.fitBounds(bounds, {
+                maxZoom: 11,
+                paddingTopLeft: [24, 150],
+                paddingBottomRight: [300, 40],
+            });
+        }
     }, [filtered]);
 
     const resetFilters = () => {
@@ -466,7 +483,7 @@ export function IndonesiaMap({
                 {filtered.length} / {markers.length} koperasi
             </div>
 
-            <div className="absolute right-4 bottom-6 z-20 w-72 rounded-md border border-white/10 bg-black-950/50 p-3 text-sm text-white shadow-lg backdrop-blur">
+            <div className="absolute right-4 bottom-6 z-20 rounded-md border border-white/10 bg-black-950/50 p-3 text-sm text-white shadow-lg backdrop-blur w-fit">
                 <div className="mb-2 font-semibold">Keterangan Marker</div>
                 <div className="grid gap-2.5 font-semibold">
                     <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-blue-600" /> 100% terpasang <span className="ml-auto">({legendCounts.blue})</span></div>
