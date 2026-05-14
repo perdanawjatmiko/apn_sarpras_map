@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Sarpras;
+use App\Services\AdminPageService;
+use App\Services\PublicMapService;
+use App\Services\SarprasService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Inertia\Inertia;
+use Inertia\Response;
+
+class SarprasController extends Controller
+{
+    public function __construct(
+        private readonly AdminPageService $admins,
+        private readonly SarprasService $sarprases,
+    ) {}
+
+    public function index(Request $request): Response
+    {
+        $search = $request->string('search')->toString();
+
+        return Inertia::render('admin/index', [
+            'resource' => 'sarprases',
+            'title' => 'Sarpras',
+            'search' => $search,
+            'stats' => $this->admins->dashboard(),
+            'records' => $this->sarprases->paginated($search),
+            'options' => [
+                'koperasis' => [],
+                'sarprases' => [],
+                'statuses' => [],
+                'cities' => [],
+                'districts' => [],
+                'villages' => [],
+            ],
+        ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->sarprases->create($request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('sarprases')],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')],
+            'description' => ['nullable', 'string'],
+        ]));
+
+        return back()->with('success', 'Sarpras dibuat.');
+    }
+
+    public function update(Request $request, Sarpras $sarpras): RedirectResponse
+    {
+        $this->sarprases->update($sarpras, $request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('sarprases')->ignore($sarpras)],
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')->ignore($sarpras)],
+            'description' => ['nullable', 'string'],
+        ]));
+
+        return back()->with('success', 'Sarpras diperbarui.');
+    }
+
+    public function destroy(Sarpras $sarpras): RedirectResponse
+    {
+        $sarpras->delete();
+        cache()->forget(PublicMapService::CACHE_KEY);
+
+        return back()->with('success', 'Sarpras dihapus.');
+    }
+
+    public function import(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,xlsx', 'max:10240'],
+        ]);
+
+        $count = $this->sarprases->import($data['file']);
+
+        return back()->with('success', "{$count} sarpras diimport.");
+    }
+}
