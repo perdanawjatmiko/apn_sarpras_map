@@ -21,6 +21,7 @@ import {
 import type { SarprasMarker } from '@/types/sarpras-map';
 
 type RegionOption = { id: number; name: string };
+type MarkerColor = 'blue' | 'emerald' | 'amber' | 'red';
 type FilterState = {
     query: string;
     provinceId: string;
@@ -74,24 +75,35 @@ function statusSortValue(status?: string | null) {
 }
 
 function markerColorClass(marker: SarprasMarker) {
+    const color = markerColor(marker);
+
+    return {
+        blue: 'bg-blue-600 shadow-blue-950/40',
+        emerald: 'bg-emerald-500 shadow-emerald-950/40',
+        amber: 'bg-amber-400 shadow-amber-950/40',
+        red: 'bg-red-500 shadow-red-950/40',
+    }[color];
+}
+
+function markerColor(marker: SarprasMarker): MarkerColor {
     const counts = marker.status_counts ?? {};
     const installed = Number(counts.terpasang ?? 0);
     const arrived = installed + Number(counts.tiba ?? 0);
     const percentage = (arrived / TOTAL_SARPRAS) * 100;
 
     if (installed >= TOTAL_SARPRAS) {
-        return 'bg-blue-600 shadow-blue-950/40';
+        return 'blue';
     }
 
     if (percentage > 70) {
-        return 'bg-emerald-500 shadow-emerald-950/40';
+        return 'emerald';
     }
 
     if (percentage > 35) {
-        return 'bg-amber-400 shadow-amber-950/40';
+        return 'amber';
     }
 
-    return 'bg-red-500 shadow-red-950/40';
+    return 'red';
 }
 
 function popupContent(marker: SarprasMarker) {
@@ -136,7 +148,8 @@ function popupContent(marker: SarprasMarker) {
             <h2 class="text-base font-semibold capitalize">Koperasi Desa ${escapeHtml(marker.name)}</h2>
             <p class="mt-1 text-xs text-zinc-500">${escapeHtml([marker.village, marker.district, marker.city, marker.province].filter(Boolean).join(', '))}</p>
             <h5 class="col-span-4 font-semibold text-zinc-600 text-center my-2 text-base">Detail Sarpras</h5><h5 class="col-span-2 font-semibold text-right"></h5>
-            <small>Total sarpras per-KDKMP: <span class="font-semibold text-emerald-600">${countedSarprases}</span> / <span class="font-semibold text-red-600">${sarprasItems.length}</span></small>
+            <p>Total sarpras per-KDKMP: <span class="font-semibold text-emerald-600">${countedSarprases}</span> / <span class="font-semibold text-red-600">${sarprasItems.length - 1}</span></p>
+            <small>* setiap kdkmp hanya perlu salah satu dari item ini Internet / Starlink</small>
             <div class="mt-3 grid grid-cols-4 gap-2 text-xs">
                 ${statusCards}
             </div>
@@ -308,6 +321,17 @@ export function IndonesiaMap({
         });
     }, [markers, filters]);
 
+    const legendCounts = useMemo(() => {
+        return filtered.reduce(
+            (totals, marker) => {
+                totals[markerColor(marker)]++;
+
+                return totals;
+            },
+            { blue: 0, emerald: 0, amber: 0, red: 0 } as Record<MarkerColor, number>,
+        );
+    }, [filtered]);
+
     useEffect(() => {
         if (!filters.provinceId) {
             setCities([]);
@@ -442,13 +466,13 @@ export function IndonesiaMap({
                 {filtered.length} / {markers.length} koperasi
             </div>
 
-            <div className="absolute right-4 bottom-6 z-20 w-64 rounded-md border border-white/10 bg-black-950/50 p-3 text-xs text-white shadow-lg backdrop-blur">
-                <div className="mb-2 font-medium">Keterangan Marker</div>
-                <div className="grid gap-2">
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> 100% terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Lebih dari 70% tiba/terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari 35% tiba/terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari 35% tiba/terpasang</div>
+            <div className="absolute right-4 bottom-6 z-20 w-72 rounded-md border border-white/10 bg-black-950/50 p-3 text-sm text-white shadow-lg backdrop-blur">
+                <div className="mb-2 font-semibold">Keterangan Marker</div>
+                <div className="grid gap-2.5 font-semibold">
+                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-blue-600" /> 100% terpasang <span className="ml-auto">({legendCounts.blue})</span></div>
+                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-emerald-500" /> Lebih dari 70% tiba/terpasang <span className="ml-auto">({legendCounts.emerald})</span></div>
+                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-amber-400" /> Lebih dari 35% tiba/terpasang <span className="ml-auto">({legendCounts.amber})</span></div>
+                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-red-500" /> Kurang dari 35% tiba/terpasang <span className="ml-auto">({legendCounts.red})</span></div>
                 </div>
             </div>
 
