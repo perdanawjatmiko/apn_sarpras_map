@@ -12,7 +12,7 @@ return new class extends Migration
         if (! Schema::hasTable('statuses')) {
             Schema::create('statuses', function (Blueprint $table) {
                 $table->id();
-                $table->enum('name', ['terpasang', 'tiba', 'pengiriman', 'transit'])->unique();
+                $table->enum('name', ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'])->unique();
                 $table->timestamps();
             });
         }
