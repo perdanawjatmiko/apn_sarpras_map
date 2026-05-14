@@ -101,6 +101,7 @@ function popupContent(marker: SarprasMarker) {
     const sortedSarprases = [...sarprasItems].sort((first, second) => {
         return statusSortValue(first.status) - statusSortValue(second.status);
     });
+    const countedSarprases = sortedSarprases.filter((item) => item.status !== 'tanpa_status').length;
     const counts = marker.status_counts ?? {};
     const statusCards = [
         { label: 'Terpasang', value: counts.terpasang ?? 0, className: 'bg-emerald-50 text-emerald-700' },
@@ -135,6 +136,7 @@ function popupContent(marker: SarprasMarker) {
             <h2 class="text-base font-semibold capitalize">Koperasi Desa ${escapeHtml(marker.name)}</h2>
             <p class="mt-1 text-xs text-zinc-500">${escapeHtml([marker.village, marker.district, marker.city, marker.province].filter(Boolean).join(', '))}</p>
             <h5 class="col-span-4 font-semibold text-zinc-600 text-center my-2 text-base">Detail Sarpras</h5><h5 class="col-span-2 font-semibold text-right"></h5>
+            <small>Total sarpras per-KDKMP: <span class="font-semibold text-emerald-600">${countedSarprases}</span> / <span class="font-semibold text-red-600">${sarprasItems.length}</span></small>
             <div class="mt-3 grid grid-cols-4 gap-2 text-xs">
                 ${statusCards}
             </div>
@@ -351,6 +353,12 @@ export function IndonesiaMap({
             maxZoom: 18,
         }).addTo(map.current);
 
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Boundaries and labels &copy; Esri',
+            maxZoom: 18,
+            pane: 'overlayPane',
+        }).addTo(map.current);
+
         markerLayer.current = L.layerGroup().addTo(map.current);
 
         return () => {
@@ -440,7 +448,7 @@ export function IndonesiaMap({
                     <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> 100% terpasang</div>
                     <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Lebih dari 70% tiba/terpasang</div>
                     <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari 35% tiba/terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> 35% atau kurang tiba/terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari 35% tiba/terpasang</div>
                 </div>
             </div>
 

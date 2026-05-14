@@ -49,7 +49,7 @@ class KoperasiService
         $this->flushMapCache();
     }
 
-    public function import(UploadedFile $file): int
+    public function import(UploadedFile|string $file): int
     {
         $allRows = $this->reader->rows($file);
         $headers = array_map(fn ($header) => str($header)->lower()->snake()->toString(), $allRows[0] ?? []);
@@ -100,9 +100,11 @@ class KoperasiService
                 $attributes['ai_id'] = $aiId;
             }
 
-            Koperasi::updateOrCreate($this->lookupAttributes($aiId, $name), $attributes);
+            $koperasi = Koperasi::updateOrCreate($this->lookupAttributes($aiId, $name), $attributes);
 
-            $count++;
+            if ($koperasi->wasRecentlyCreated || $koperasi->wasChanged()) {
+                $count++;
+            }
         }
 
         $this->flushMapCache();

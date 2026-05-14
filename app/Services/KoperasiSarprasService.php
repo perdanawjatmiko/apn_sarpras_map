@@ -27,7 +27,7 @@ class KoperasiSarprasService
                 $query->whereHas('koperasi', fn ($relation) => $relation->where('name', 'like', "%{$search}%"))
                     ->orWhereHas('sarpras', fn ($relation) => $relation->where('name', 'like', "%{$search}%"));
             })
-            ->latest('id')
+            ->orderBy('koperasi_id', 'asc')
             ->paginate(10)
             ->withQueryString();
     }
@@ -68,7 +68,7 @@ class KoperasiSarprasService
         Cache::forget(PublicMapService::CACHE_KEY);
     }
 
-    public function import(UploadedFile $file): int
+    public function import(UploadedFile|string $file): int
     {
         $rows = $this->reader->rows($file);
         $headers = $rows[0] ?? [];
@@ -93,6 +93,10 @@ class KoperasiSarprasService
             );
         }
 
+        if (! $file instanceof UploadedFile) {
+            throw new \InvalidArgumentException('Import tanpa kolom ai_id hanya didukung dari upload file.');
+        }
+
         $this->koperasis->import($file);
 
         foreach (array_slice($rows, 1) as $row) {
@@ -115,12 +119,15 @@ class KoperasiSarprasService
                     continue;
                 }
 
-                $this->upsert([
+                $record = $this->upsert([
                     'koperasi_id' => $koperasi->id,
                     'sarpras_id' => $sarpras->id,
                     'status_id' => $status->id,
                 ]);
-                $count++;
+
+                if ($record->wasRecentlyCreated || $record->wasChanged('status_id')) {
+                    $count++;
+                }
             }
         }
 
@@ -170,12 +177,15 @@ class KoperasiSarprasService
                     continue;
                 }
 
-                $this->upsert([
+                $record = $this->upsert([
                     'koperasi_id' => $koperasi->id,
                     'sarpras_id' => $sarpras->id,
                     'status_id' => $status->id,
                 ]);
-                $count++;
+
+                if ($record->wasRecentlyCreated || $record->wasChanged('status_id')) {
+                    $count++;
+                }
             }
         }
 
@@ -212,7 +222,7 @@ class KoperasiSarprasService
 
         $normalized = Str::of($value)->lower()->squish()->toString();
         $name = match (true) {
-            str_contains($normalized, 'terpasang') => 'terpasang',
+            str_contains($normalized, 'terpasang') || str_contains($normalized, 'terkirim') => 'terpasang',
             str_contains($normalized, 'tiba') => 'tiba',
             str_contains($normalized, 'pengiriman') => 'pengiriman',
             str_contains($normalized, 'transit') => 'transit',
