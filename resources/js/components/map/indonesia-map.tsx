@@ -440,7 +440,7 @@ export function IndonesiaMap({
             <div className="absolute inset-x-0 top-0 z-20 hidden border-b border-white/10 bg-primary p-4 md:block">
                 <div className="flex flex-col gap-3">
                     <div className="min-w-0">
-                        <h1 className="text-xl font-semibold tracking-normal">Peta Penyebaran Sarpras Koperasi Desa Kelurahan Merah Putih</h1>
+                        <h1 className="text-xl font-semibold tracking-normal">Peta Pengiriman Sarpras Koperasi Desa Kelurahan Merah Putih</h1>
                         <p className="text-sm text-zinc-300">{filtered.length} dari {markers.length} koperasi tampil</p>
                     </div>
                     <FilterControls

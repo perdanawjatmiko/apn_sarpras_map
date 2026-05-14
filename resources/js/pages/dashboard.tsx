@@ -85,7 +85,7 @@ export default function Dashboard({
             <div className="flex flex-col gap-6 p-4 md:p-6">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-normal">Dashboard Admin</h1>
-                    <p className="text-sm text-muted-foreground">Ringkasan penyebaran sarpras koperasi.</p>
+                    <p className="text-sm text-muted-foreground">Ringkasan pengiriman sarpras koperasi.</p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <StatCard
