@@ -18,7 +18,7 @@ return new class extends Migration
 
         Schema::create('statuses', function (Blueprint $table) {
             $table->id();
-            $table->enum('name', ['terpasang', 'tiba', 'pengiriman', 'transit'])->unique();
+            $table->enum('name', ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'])->unique();
             $table->timestamps();
         });
 

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name'])]
 class Status extends Model
 {
-    public const NAMES = ['terpasang', 'tiba', 'pengiriman', 'transit'];
+    public const NAMES = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
 
     public function koperasiSarprases(): HasMany
     {

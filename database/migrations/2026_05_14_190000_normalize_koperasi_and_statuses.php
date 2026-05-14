@@ -19,7 +19,7 @@ return new class extends Migration
 
         $now = now();
 
-        foreach (['terpasang', 'tiba', 'pengiriman', 'transit'] as $status) {
+        foreach (['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'] as $status) {
             DB::table('statuses')->updateOrInsert(
                 ['name' => $status],
                 ['created_at' => $now, 'updated_at' => $now]

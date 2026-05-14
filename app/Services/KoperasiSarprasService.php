@@ -207,7 +207,7 @@ class KoperasiSarprasService
     private function resolveStatus(?string $value): ?Status
     {
         if (blank($value)) {
-            return null;
+            return Status::firstOrCreate(['name' => 'tanpa_status']);
         }
 
         $normalized = Str::of($value)->lower()->squish()->toString();
@@ -216,9 +216,10 @@ class KoperasiSarprasService
             str_contains($normalized, 'tiba') => 'tiba',
             str_contains($normalized, 'pengiriman') => 'pengiriman',
             str_contains($normalized, 'transit') => 'transit',
+            str_contains($normalized, 'tanpa_status') || str_contains($normalized, 'tanpa status') => 'tanpa_status',
             default => null,
         };
 
-        return $name ? Status::firstWhere('name', $name) : null;
+        return $name ? Status::firstOrCreate(['name' => $name]) : null;
     }
 }
