@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\City;
 use App\Models\District;
 use App\Models\Koperasi;
-use App\Models\Province;
 use App\Models\Village;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,14 +13,10 @@ class RegionOptionController extends Controller
 {
     public function provinces(): JsonResponse
     {
-        return response()->json(
-            Province::query()
-                ->whereIn('id', Koperasi::query()->located()->select('province_id')->whereNotNull('province_id')->distinct())
-                ->orderBy('name')
-                ->get(['id', 'name'])
-                ->values()
-                ->all()
-        );
+        return response()->json([
+            ['id' => 13, 'name' => 'Jawa Tengah'],
+            ['id' => 15, 'name' => 'Jawa Timur'],
+        ]);
     }
 
     public function cities(Request $request): JsonResponse

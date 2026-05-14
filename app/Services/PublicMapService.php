@@ -3,13 +3,13 @@
 namespace App\Services;
 
 use App\Models\Koperasi;
-use App\Models\Province;
 use App\Models\Sarpras;
+use App\Models\Status;
 use Illuminate\Support\Facades\Cache;
 
 class PublicMapService
 {
-    public const CACHE_KEY = 'public-map:koperasi-markers:v5';
+    public const CACHE_KEY = 'public-map:koperasi-markers:v6';
 
     /**
      * @return array{markers: array<int, array<string, mixed>>, filters: array<string, mixed>, stats: array<string, int>}
@@ -32,40 +32,57 @@ class PublicMapService
                 ->latest('id')
                 ->limit(10000)
                 ->get()
-                ->map(fn (Koperasi $koperasi) => [
-                    'id' => $koperasi->id,
-                    'name' => $koperasi->name,
-                    'province_id' => $koperasi->province_id,
-                    'city_id' => $koperasi->city_id,
-                    'district_id' => $koperasi->district_id,
-                    'village_id' => $koperasi->village_id,
-                    'latitude' => (float) $koperasi->latitude,
-                    'longitude' => (float) $koperasi->longitude,
-                    'province' => $koperasi->province?->name,
-                    'city' => $koperasi->city?->name,
-                    'district' => $koperasi->district?->name,
-                    'village' => $koperasi->village?->name,
-                    'sarpras_count' => $koperasi->sarpras_assignments_count,
-                    'delivery_percentage' => $koperasi->delivery_percentage,
-                    'installed_percentage' => $koperasi->installed_percentage,
-                    'core_percentage' => $koperasi->core_percentage,
-                    'sarprases' => $koperasi->sarprasAssignments->map(fn ($assignment) => [
-                        'name' => $assignment->sarpras?->name,
-                        'status' => $assignment->status?->name,
-                    ])->values()->all(),
-                ])
+                ->map(function (Koperasi $koperasi) {
+                    $statusOrder = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
+                    $statusCounts = array_fill_keys(Status::NAMES, 0);
+
+                    foreach ($koperasi->sarprasAssignments as $assignment) {
+                        $status = $assignment->status?->name ?? 'tanpa_status';
+                        $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
+                    }
+
+                    return [
+                        'id' => $koperasi->id,
+                        'name' => $koperasi->name,
+                        'province_id' => $koperasi->province_id,
+                        'city_id' => $koperasi->city_id,
+                        'district_id' => $koperasi->district_id,
+                        'village_id' => $koperasi->village_id,
+                        'latitude' => (float) $koperasi->latitude,
+                        'longitude' => (float) $koperasi->longitude,
+                        'province' => $koperasi->province?->name,
+                        'city' => $koperasi->city?->name,
+                        'district' => $koperasi->district?->name,
+                        'village' => $koperasi->village?->name,
+                        'sarpras_count' => $koperasi->sarpras_assignments_count,
+                        'status_counts' => $statusCounts,
+                        'delivery_percentage' => $koperasi->delivery_percentage,
+                        'installed_percentage' => $koperasi->installed_percentage,
+                        'core_percentage' => $koperasi->core_percentage,
+                        'sarprases' => $koperasi->sarprasAssignments
+                            ->sortBy(function ($assignment) use ($statusOrder) {
+                                $index = array_search($assignment->status?->name ?? 'tanpa_status', $statusOrder, true);
+
+                                return $index === false ? count($statusOrder) : $index;
+                            })
+                            ->map(fn ($assignment) => [
+                                'name' => $assignment->sarpras?->name,
+                                'status' => $assignment->status?->name ?? 'tanpa_status',
+                            ])
+                            ->values()
+                            ->all(),
+                    ];
+                })
                 ->values()
                 ->all();
 
             return [
                 'markers' => $markers,
                 'filters' => [
-                    'provinces' => Province::query()
-                        ->whereIn('id', Koperasi::query()->located()->select('province_id')->whereNotNull('province_id')->distinct())
-                        ->orderBy('name')
-                        ->get(['id', 'name'])
-                        ->values()
-                        ->all(),
+                    'provinces' => [
+                        ['id' => 13, 'name' => 'Jawa Tengah'],
+                        ['id' => 15, 'name' => 'Jawa Timur'],
+                    ],
                     'sarprases' => Sarpras::query()->orderBy('name')->pluck('name')->all(),
                 ],
                 'stats' => [

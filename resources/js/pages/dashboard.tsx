@@ -25,7 +25,7 @@ function StatCard({ title, value, description, icon: Icon }: StatProps) {
                     <CardDescription>{title}</CardDescription>
                     <CardTitle className="mt-2 text-3xl font-semibold">{value}</CardTitle>
                 </div>
-                <div className="rounded-md bg-emerald-50 p-2 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                <div className="rounded-md bg-primary/10 p-2 text-primary">
                     <Icon className="size-5" />
                 </div>
             </CardHeader>
@@ -53,7 +53,7 @@ function StatusChart({ data }: { data: { label: string; value: number }[] }) {
                             </div>
                             <div className="h-3 overflow-hidden rounded-full bg-muted">
                                 <div
-                                    className="h-full rounded-full bg-emerald-600"
+                                    className="h-full rounded-full bg-primary"
                                     style={{ width: `${Math.max((item.value / max) * 100, item.value ? 8 : 0)}%` }}
                                 />
                             </div>
@@ -109,7 +109,7 @@ export default function Dashboard({
                     <StatCard
                         title="Kelengkapan"
                         value={`${stats.completion_percentage}%`}
-                        description="Dummy persentase kelengkapan data."
+                        description="Persentase koperasi yang seluruh sarprasnya sudah terpasang."
                         icon={TrendingUp}
                     />
                 </div>

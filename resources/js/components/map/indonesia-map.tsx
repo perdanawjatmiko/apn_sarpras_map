@@ -27,6 +27,8 @@ type FilterState = {
     villageId: string;
 };
 
+const STATUS_ORDER = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
+
 function percent(value?: string | null) {
     return value ? `${Math.round(Number(value) * 100)}%` : '-';
 }
@@ -62,12 +64,55 @@ function statusBadgeClass(status?: string | null) {
     return 'border-zinc-200 bg-zinc-50 text-zinc-600';
 }
 
+function statusSortValue(status?: string | null) {
+    const index = STATUS_ORDER.indexOf(String(status ?? 'tanpa_status').toLowerCase());
+
+    return index === -1 ? STATUS_ORDER.length : index;
+}
+
+function markerColorClass(marker: SarprasMarker) {
+    const counts = marker.status_counts ?? {};
+    const countedStatuses = Object.values(counts).reduce<number>((sum, value) => sum + Number(value ?? 0), 0);
+    const total = Math.max(marker.sarpras_count, countedStatuses);
+    const installed = Number(counts.terpasang ?? 0);
+    const arrived = installed + Number(counts.tiba ?? 0);
+
+    if (total > 0 && installed >= total) {
+        return 'bg-blue-600 shadow-blue-950/40';
+    }
+
+    if (total > 0 && arrived >= total) {
+        return 'bg-emerald-500 shadow-emerald-950/40';
+    }
+
+    if (total > 0 && arrived > total / 2) {
+        return 'bg-amber-400 shadow-amber-950/40';
+    }
+
+    return 'bg-red-500 shadow-red-950/40';
+}
+
 function popupContent(marker: SarprasMarker) {
     const sarprasItems = Array.isArray(marker.sarprases)
         ? marker.sarprases
         : Object.values(marker.sarprases ?? {});
-    const sarprases = sarprasItems.length
-        ? sarprasItems
+    const sortedSarprases = [...sarprasItems].sort((first, second) => {
+        return statusSortValue(first.status) - statusSortValue(second.status);
+    });
+    const counts = marker.status_counts ?? {};
+    const statusCards = [
+        { label: 'Terpasang', value: counts.terpasang ?? 0, className: 'bg-blue-50 text-blue-700' },
+        { label: 'Tiba', value: counts.tiba ?? 0, className: 'bg-emerald-50 text-emerald-700' },
+        { label: 'Pengiriman', value: counts.pengiriman ?? 0, className: 'bg-amber-50 text-amber-700' },
+        { label: 'Transit', value: counts.transit ?? 0, className: 'bg-violet-50 text-violet-700' },
+    ].map((item) => `
+        <div class="rounded-md ${item.className} p-2 text-center">
+            <div class="text-lg font-semibold leading-none">${item.value}</div>
+            <div class="mt-1 text-[10px] uppercase leading-tight">${item.label}</div>
+        </div>
+    `).join('');
+    const sarprases = sortedSarprases.length
+        ? sortedSarprases
             .map((item) => `
                 <tr class="border-b border-zinc-100 last:border-0">
                     <td class="max-w-0 py-1.5 pl-2 pr-3 align-top text-zinc-700">
@@ -87,14 +132,12 @@ function popupContent(marker: SarprasMarker) {
         <div class="w-80 h-fit text-zinc-950">
             <h2 class="text-base font-semibold capitalize">Koperasi Desa ${escapeHtml(marker.name)}</h2>
             <p class="mt-1 text-xs text-zinc-500">${escapeHtml([marker.village, marker.district, marker.city, marker.province].filter(Boolean).join(', '))}</p>
-            <p class="my-1 text-xs text-zinc-500">Sarpras yang diterima koperasi desa ini : <span class="text-emerald-600">${marker.sarpras_count}</span> / <span class="text-primary">16</span></p>
-            <div class="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                <div class="rounded-md bg-emerald-50 p-2"><div class="font-semibold text-emerald-700">${marker.sarpras_count}</div><div>Sarpras</div></div>
-                <div class="rounded-md bg-sky-50 p-2"><div class="font-semibold text-sky-700">${percent(marker.delivery_percentage)}</div><div>Kirim</div></div>
-                <div class="rounded-md bg-amber-50 p-2"><div class="font-semibold text-amber-700">${percent(marker.installed_percentage)}</div><div>Pasang</div></div>
+            <h5 class="col-span-4 font-semibold text-zinc-600 text-center my-2 text-base">Detail Sarpras</h5><h5 class="col-span-2 font-semibold text-right"></h5>
+            <div class="mt-3 grid grid-cols-4 gap-2 text-xs">
+                ${statusCards}
             </div>
             <div class="mt-3 max-h-64 overflow-y-auto overflow-x-hidden rounded-md border border-zinc-100 text-xs">
-                ${sarprasItems.length ? `
+                ${sortedSarprases.length ? `
                     <table class="w-full table-fixed border-collapse">
                         <thead class="sticky top-0 bg-zinc-50 text-left text-[11px] uppercase text-zinc-500">
                             <tr>
@@ -313,15 +356,15 @@ export function IndonesiaMap({
 
         markerLayer.current.clearLayers();
 
-        const icon = L.divIcon({
-            className: '',
-            html: '<span class="block size-4 rounded-full border-2 border-white bg-emerald-500 shadow-lg shadow-emerald-950/40"></span>',
-            iconSize: [16, 16],
-            iconAnchor: [8, 8],
-            popupAnchor: [0, -8],
-        });
-
         filtered.forEach((marker) => {
+            const icon = L.divIcon({
+                className: '',
+                html: `<span class="block size-4 rounded-full border-2 border-white shadow-lg ${markerColorClass(marker)}"></span>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8],
+                popupAnchor: [0, -8],
+            });
+
             L.marker([marker.latitude, marker.longitude], { icon })
                 .bindPopup(popupContent(marker), { maxWidth: 360 })
                 .addTo(markerLayer.current!);
@@ -378,6 +421,16 @@ export function IndonesiaMap({
 
             <div className="absolute right-4 top-4 z-20 rounded-md border border-white/10 bg-zinc-950/80 px-3 py-2 text-xs text-white shadow-lg backdrop-blur">
                 {filtered.length} / {markers.length} koperasi
+            </div>
+
+            <div className="absolute right-4 bottom-6 z-20 w-64 rounded-md border border-white/10 bg-zinc-950/85 p-3 text-xs text-white shadow-lg backdrop-blur">
+                <div className="mb-2 font-medium">Legenda Marker</div>
+                <div className="grid gap-2">
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> Semua terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Semua tiba, belum semua terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari setengah tiba</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari setengah tiba</div>
+                </div>
             </div>
 
             <div ref={mapElement} className="absolute inset-0 z-0" />
