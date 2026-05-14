@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
@@ -21,6 +22,7 @@ import type { SarprasMarker } from '@/types/sarpras-map';
 
 type RegionOption = { id: number; name: string };
 type FilterState = {
+    query: string;
     provinceId: string;
     cityId: string;
     districtId: string;
@@ -236,12 +238,18 @@ function FilterControls({
     onReset: () => void;
 }) {
     return (
-        <div className="grid gap-2 md:grid-cols-[180px_180px_180px_180px_auto]">
+        <div className="grid gap-2 md:grid-cols-[minmax(220px,1fr)_180px_180px_180px_180px_auto]">
+            <Input
+                value={filters.query}
+                placeholder="Cari nama koperasi"
+                className="border-white/15 bg-white text-zinc-950 placeholder:text-zinc-500"
+                onChange={(event) => onChange({ ...filters, query: event.target.value })}
+            />
             <RegionSelect
                 value={filters.provinceId}
                 placeholder="Provinsi"
                 options={provinces}
-                onValueChange={(provinceId) => onChange({ provinceId, cityId: '', districtId: '', villageId: '' })}
+                onValueChange={(provinceId) => onChange({ ...filters, provinceId, cityId: '', districtId: '', villageId: '' })}
             />
             <RegionSelect
                 value={filters.cityId}
@@ -281,14 +289,17 @@ export function IndonesiaMap({
     const mapElement = useRef<HTMLDivElement | null>(null);
     const map = useRef<L.Map | null>(null);
     const markerLayer = useRef<L.LayerGroup | null>(null);
-    const [filters, setFilters] = useState<FilterState>({ provinceId: '', cityId: '', districtId: '', villageId: '' });
+    const [filters, setFilters] = useState<FilterState>({ query: '', provinceId: '', cityId: '', districtId: '', villageId: '' });
     const [cities, setCities] = useState<RegionOption[]>([]);
     const [districts, setDistricts] = useState<RegionOption[]>([]);
     const [villages, setVillages] = useState<RegionOption[]>([]);
 
     const filtered = useMemo(() => {
+        const query = filters.query.trim().toLowerCase();
+
         return markers.filter((marker) => {
-            return (!filters.provinceId || marker.province_id === Number(filters.provinceId))
+            return (!query || marker.name.toLowerCase().includes(query))
+                && (!filters.provinceId || marker.province_id === Number(filters.provinceId))
                 && (!filters.cityId || marker.city_id === Number(filters.cityId))
                 && (!filters.districtId || marker.district_id === Number(filters.districtId))
                 && (!filters.villageId || marker.village_id === Number(filters.villageId));
@@ -372,7 +383,7 @@ export function IndonesiaMap({
     }, [filtered]);
 
     const resetFilters = () => {
-        setFilters({ provinceId: '', cityId: '', districtId: '', villageId: '' });
+        setFilters({ query: '', provinceId: '', cityId: '', districtId: '', villageId: '' });
     };
 
     return (
@@ -423,13 +434,13 @@ export function IndonesiaMap({
                 {filtered.length} / {markers.length} koperasi
             </div>
 
-            <div className="absolute right-4 bottom-6 z-20 w-64 rounded-md border border-white/10 bg-zinc-950/85 p-3 text-xs text-white shadow-lg backdrop-blur">
-                <div className="mb-2 font-medium">Legenda Marker</div>
+            <div className="absolute right-4 bottom-6 z-20 w-64 rounded-md border border-white/10 bg-black-950/50 p-3 text-xs text-white shadow-lg backdrop-blur">
+                <div className="mb-2 font-medium">Keterangan Marker</div>
                 <div className="grid gap-2">
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> Semua terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> Semua Sarpras terpasang</div>
                     <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Semua tiba, belum semua terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari setengah tiba</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari setengah tiba</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari setengah sarpras tiba</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari setengah sarpras tiba</div>
                 </div>
             </div>
 
