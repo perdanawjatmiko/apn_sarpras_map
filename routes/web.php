@@ -5,15 +5,23 @@ use App\Http\Controllers\Admin\KoperasiController;
 use App\Http\Controllers\Admin\KoperasiSarprasController;
 use App\Http\Controllers\Admin\SarprasController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\KoperasiDetailController;
 use App\Http\Controllers\PublicMapController;
+use App\Http\Controllers\RegionOptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicMapController::class, 'index'])->name('home');
 Route::get('/koperasis/{koperasi}', KoperasiDetailController::class)->name('koperasis.show');
+Route::prefix('api/regions')->name('api.regions.')->group(function () {
+    Route::get('provinces', [RegionOptionController::class, 'provinces'])->name('provinces');
+    Route::get('cities', [RegionOptionController::class, 'cities'])->name('cities');
+    Route::get('districts', [RegionOptionController::class, 'districts'])->name('districts');
+    Route::get('villages', [RegionOptionController::class, 'villages'])->name('villages');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->name('dashboard');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', AdminController::class)->name('index');

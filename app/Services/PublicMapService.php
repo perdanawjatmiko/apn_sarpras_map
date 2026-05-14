@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Models\Koperasi;
+use App\Models\Province;
 use App\Models\Sarpras;
 use Illuminate\Support\Facades\Cache;
 
 class PublicMapService
 {
-    public const CACHE_KEY = 'public-map:koperasi-markers:v3';
+    public const CACHE_KEY = 'public-map:koperasi-markers:v5';
 
     /**
      * @return array{markers: array<int, array<string, mixed>>, filters: array<string, mixed>, stats: array<string, int>}
@@ -34,6 +35,10 @@ class PublicMapService
                 ->map(fn (Koperasi $koperasi) => [
                     'id' => $koperasi->id,
                     'name' => $koperasi->name,
+                    'province_id' => $koperasi->province_id,
+                    'city_id' => $koperasi->city_id,
+                    'district_id' => $koperasi->district_id,
+                    'village_id' => $koperasi->village_id,
                     'latitude' => (float) $koperasi->latitude,
                     'longitude' => (float) $koperasi->longitude,
                     'province' => $koperasi->province?->name,
@@ -44,11 +49,10 @@ class PublicMapService
                     'delivery_percentage' => $koperasi->delivery_percentage,
                     'installed_percentage' => $koperasi->installed_percentage,
                     'core_percentage' => $koperasi->core_percentage,
-                    'sarprases' => $koperasi->sarprasAssignments->take(6)->map(fn ($assignment) => [
+                    'sarprases' => $koperasi->sarprasAssignments->map(fn ($assignment) => [
                         'name' => $assignment->sarpras?->name,
                         'status' => $assignment->status?->name,
                     ])->values()->all(),
-                    'detail_url' => route('koperasis.show', $koperasi),
                 ])
                 ->values()
                 ->all();
@@ -56,8 +60,12 @@ class PublicMapService
             return [
                 'markers' => $markers,
                 'filters' => [
-                    'provinces' => collect($markers)->pluck('province')->filter()->unique()->sort()->values()->all(),
-                    'cities' => collect($markers)->pluck('city')->filter()->unique()->sort()->values()->all(),
+                    'provinces' => Province::query()
+                        ->whereIn('id', Koperasi::query()->located()->select('province_id')->whereNotNull('province_id')->distinct())
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->values()
+                        ->all(),
                     'sarprases' => Sarpras::query()->orderBy('name')->pluck('name')->all(),
                 ],
                 'stats' => [

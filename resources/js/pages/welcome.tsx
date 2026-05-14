@@ -1,8 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
-import { LogIn, Settings } from 'lucide-react';
+import { Head } from '@inertiajs/react';
 import { IndonesiaMap } from '@/components/map/indonesia-map';
-import { Button } from '@/components/ui/button';
 import type { SarprasMarker } from '@/types';
+
+type RegionOption = { id: number; name: string };
 
 export default function Welcome({
     markers,
@@ -10,7 +10,7 @@ export default function Welcome({
     stats,
 }: {
     markers: SarprasMarker[];
-    filters: { provinces: string[]; cities: string[]; sarprases: string[] };
+    filters: { provinces: RegionOption[]; sarprases: string[] };
     stats: { koperasis: number; sarprases: number };
 }) {
     return (
@@ -20,21 +20,10 @@ export default function Welcome({
                 <div className="hidden rounded-md border border-white/10 bg-zinc-950/80 px-3 py-2 text-xs text-white shadow-lg backdrop-blur md:block">
                     {stats.koperasis} koperasi | {stats.sarprases} sarpras
                 </div>
-                <Button asChild variant="secondary">
-                    <Link href="/login">
-                        <LogIn /> Login
-                    </Link>
-                </Button>
-                <Button asChild>
-                    <Link href="/admin">
-                        <Settings /> Admin
-                    </Link>
-                </Button>
             </div>
             <IndonesiaMap
                 markers={markers}
                 provinces={filters.provinces}
-                cities={filters.cities}
             />
         </>
     );
