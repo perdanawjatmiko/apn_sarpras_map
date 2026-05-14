@@ -30,6 +30,7 @@ type FilterState = {
 };
 
 const STATUS_ORDER = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
+const TOTAL_SARPRAS = 16;
 
 function percent(value?: string | null) {
     return value ? `${Math.round(Number(value) * 100)}%` : '-';
@@ -74,20 +75,19 @@ function statusSortValue(status?: string | null) {
 
 function markerColorClass(marker: SarprasMarker) {
     const counts = marker.status_counts ?? {};
-    const countedStatuses = Object.values(counts).reduce<number>((sum, value) => sum + Number(value ?? 0), 0);
-    const total = Math.max(marker.sarpras_count, countedStatuses);
     const installed = Number(counts.terpasang ?? 0);
     const arrived = installed + Number(counts.tiba ?? 0);
+    const percentage = (arrived / TOTAL_SARPRAS) * 100;
 
-    if (total > 0 && installed >= total) {
+    if (installed >= TOTAL_SARPRAS) {
         return 'bg-blue-600 shadow-blue-950/40';
     }
 
-    if (total > 0 && arrived >= total) {
+    if (percentage > 70) {
         return 'bg-emerald-500 shadow-emerald-950/40';
     }
 
-    if (total > 0 && arrived > total / 2) {
+    if (percentage > 35) {
         return 'bg-amber-400 shadow-amber-950/40';
     }
 
@@ -103,8 +103,8 @@ function popupContent(marker: SarprasMarker) {
     });
     const counts = marker.status_counts ?? {};
     const statusCards = [
-        { label: 'Terpasang', value: counts.terpasang ?? 0, className: 'bg-blue-50 text-blue-700' },
-        { label: 'Tiba', value: counts.tiba ?? 0, className: 'bg-emerald-50 text-emerald-700' },
+        { label: 'Terpasang', value: counts.terpasang ?? 0, className: 'bg-emerald-50 text-emerald-700' },
+        { label: 'Tiba', value: counts.tiba ?? 0, className: 'bg-sky-50 text-sky-700' },
         { label: 'Pengiriman', value: counts.pengiriman ?? 0, className: 'bg-amber-50 text-amber-700' },
         { label: 'Transit', value: counts.transit ?? 0, className: 'bg-violet-50 text-violet-700' },
     ].map((item) => `
@@ -238,13 +238,13 @@ function FilterControls({
     onReset: () => void;
 }) {
     return (
-        <div className="grid gap-2 md:grid-cols-[minmax(220px,1fr)_180px_180px_180px_180px_auto]">
-            <Input
+        <div className="grid gap-2 md:grid-cols-5">
+            {/* <Input
                 value={filters.query}
                 placeholder="Cari nama koperasi"
                 className="border-white/15 bg-white text-zinc-950 placeholder:text-zinc-500"
                 onChange={(event) => onChange({ ...filters, query: event.target.value })}
-            />
+            /> */}
             <RegionSelect
                 value={filters.provinceId}
                 placeholder="Provinsi"
@@ -437,10 +437,10 @@ export function IndonesiaMap({
             <div className="absolute right-4 bottom-6 z-20 w-64 rounded-md border border-white/10 bg-black-950/50 p-3 text-xs text-white shadow-lg backdrop-blur">
                 <div className="mb-2 font-medium">Keterangan Marker</div>
                 <div className="grid gap-2">
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> Semua Sarpras terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Semua tiba, belum semua terpasang</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari setengah sarpras tiba</div>
-                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> Kurang dari setengah sarpras tiba</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-blue-600" /> 100% terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-emerald-500" /> Lebih dari 70% tiba/terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-amber-400" /> Lebih dari 35% tiba/terpasang</div>
+                    <div className="flex items-center gap-2"><span className="size-3 rounded-full bg-red-500" /> 35% atau kurang tiba/terpasang</div>
                 </div>
             </div>
 

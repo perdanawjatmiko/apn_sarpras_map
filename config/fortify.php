@@ -90,6 +90,10 @@ return [
 
     'domain' => null,
 
+    'paths' => [
+        'login' => '/kunyit',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Fortify Routes Middleware
@@ -144,7 +148,6 @@ return [
     */
 
     'features' => [
-        Features::registration(),
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([

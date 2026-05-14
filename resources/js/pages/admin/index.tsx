@@ -265,10 +265,10 @@ export default function AdminIndex({
                             Kelola data {title.toLowerCase()}.
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <form onSubmit={submitSearch} className="relative">
+                    <div className="flex flex-wrap gap-2">
+                        <form onSubmit={submitSearch} className="relative min-w-0 flex-1 md:flex-none">
                             <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
-                            <Input name="search" defaultValue={search} placeholder="Cari data" className="w-64 pl-9" />
+                            <Input name="search" defaultValue={search} placeholder="Cari data" className="w-full pl-9 md:w-64" />
                         </form>
                         <ImportButton tab={tab} />
                         {tab === 'koperasis' && (
@@ -304,25 +304,29 @@ export default function AdminIndex({
                     </div>
                 </div>
                 <div className="overflow-hidden rounded-lg border bg-card">
-                    <table className="w-full text-left text-sm">
+                    <div className="w-full overflow-x-auto">
+                    <table className="min-w-[920px] w-full text-left text-sm">
                         <thead className="bg-muted text-xs uppercase text-muted-foreground">
                             <tr>
-                                {columns(tab).map((column) => <th key={column} className="p-3">{column.replaceAll('_', ' ')}</th>)}
-                                <th className="w-40 p-3">Aksi</th>
+                                {columns(tab).map((column) => <th key={column} className="whitespace-nowrap p-3">{column.replaceAll('_', ' ')}</th>)}
+                                <th className="sticky right-0 w-40 bg-muted p-3">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             {records.data.map((row) => (
                                 <tr key={row.id} className="border-t">
-                                    {columns(tab).map((column) => <td key={column} className="p-3">{text(row[column])}</td>)}
-                                    <td className="flex gap-2 p-3">
-                                        <Button size="sm" variant="outline" onClick={() => { setEditing(row); setOpen(true); }}>Edit</Button>
-                                        <Button size="sm" variant="destructive" onClick={() => remove(row)}><Trash2 /></Button>
+                                    {columns(tab).map((column) => <td key={column} className="max-w-64 truncate p-3">{text(row[column])}</td>)}
+                                    <td className="sticky right-0 bg-card p-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.8)]">
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="outline" onClick={() => { setEditing(row); setOpen(true); }}>Edit</Button>
+                                            <Button size="sm" variant="destructive" onClick={() => remove(row)}><Trash2 /></Button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
                     {records.links.map((link, index) => (
