@@ -9,6 +9,7 @@ use App\Services\PublicMapService;
 use App\Services\SarprasService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -48,9 +49,11 @@ class SarprasController extends Controller
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')],
             'description' => ['nullable', 'string'],
             'is_mandatory' => ['boolean'],
+            'mandatory_group' => ['nullable', 'string', 'max:255'],
         ]);
 
         $data['is_mandatory'] = $request->boolean('is_mandatory');
+        $data['mandatory_group'] = $this->mandatoryGroup($data['mandatory_group'] ?? null);
 
         $this->sarprases->create($data);
 
@@ -64,9 +67,11 @@ class SarprasController extends Controller
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_mandatory' => ['boolean'],
+            'mandatory_group' => ['nullable', 'string', 'max:255'],
         ]);
 
         $data['is_mandatory'] = $request->boolean('is_mandatory') ? 1 : 0;
+        $data['mandatory_group'] = $this->mandatoryGroup($data['mandatory_group'] ?? null);
 
         $this->sarprases->update($sarprase, $data);
 
@@ -90,5 +95,14 @@ class SarprasController extends Controller
         $count = $this->sarprases->import($data['file']);
 
         return back()->with('success', "{$count} sarpras diimport.");
+    }
+
+    private function mandatoryGroup(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        return Str::of($value)->lower()->squish()->replace(' ', '_')->toString();
     }
 }

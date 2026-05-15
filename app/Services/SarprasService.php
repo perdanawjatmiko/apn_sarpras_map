@@ -77,6 +77,7 @@ class SarprasService
                     'name' => $name,
                     'description' => $row[1] ?? null,
                     'is_mandatory' => $this->boolean($row[2] ?? null),
+                    'mandatory_group' => $this->mandatoryGroup($row[3] ?? null),
                 ]
             );
             $count++;
@@ -94,5 +95,14 @@ class SarprasService
         }
 
         return in_array(Str::of($value)->lower()->squish()->toString(), ['1', 'true', 'ya', 'yes', 'wajib', 'mandatory'], true);
+    }
+
+    private function mandatoryGroup(?string $value): ?string
+    {
+        if (blank($value)) {
+            return null;
+        }
+
+        return Str::of($value)->lower()->squish()->replace(' ', '_')->toString();
     }
 }

@@ -82,6 +82,7 @@ function SarprasForm({ row, onDone }: { row?: Row | null; onDone: () => void }) 
         slug: row?.slug ?? '',
         description: row?.description ?? '',
         is_mandatory: row?.is_mandatory === true || row?.is_mandatory === 1 || row?.is_mandatory === '1',
+        mandatory_group: row?.mandatory_group ?? '',
     });
     const isEdit = Boolean(row?.id);
 
@@ -91,6 +92,7 @@ function SarprasForm({ row, onDone }: { row?: Row | null; onDone: () => void }) 
         form.transform((data) => ({
             ...data,
             is_mandatory: Boolean(data.is_mandatory),
+            mandatory_group: data.mandatory_group || null,
         }));
 
         const url = isEdit ? `/admin/sarprases/${row?.id}` : '/admin/sarprases';
@@ -108,6 +110,7 @@ function SarprasForm({ row, onDone }: { row?: Row | null; onDone: () => void }) 
             <Field label="Nama sarpras" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
             <Field label="Slug" value={form.data.slug} onChange={(value) => form.setData('slug', value)} error={form.errors.slug} />
             <Field label="Deskripsi" value={form.data.description} onChange={(value) => form.setData('description', value)} error={form.errors.description} />
+            <Field label="Grup alternatif mandatory" value={form.data.mandatory_group} onChange={(value) => form.setData('mandatory_group', value)} error={form.errors.mandatory_group} />
             <label className="flex items-center gap-2 text-sm font-medium">
                 <Checkbox
                     checked={Boolean(form.data.is_mandatory)}
@@ -304,7 +307,7 @@ function columns(tab: Tab) {
     }
 
     if (tab === 'sarprases') {
-        return ['name', 'slug', 'description', 'is_mandatory'];
+        return ['name', 'slug', 'description', 'is_mandatory', 'mandatory_group'];
     }
 
     if (tab === 'koperasiSarprases') {

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'slug', 'description', 'is_mandatory'])]
+#[Fillable(['name', 'slug', 'description', 'is_mandatory', 'mandatory_group'])]
 class Sarpras extends Model
 {
     protected $table = 'sarprases';
