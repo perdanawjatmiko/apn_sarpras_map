@@ -189,7 +189,8 @@ function popupContent(marker: SarprasMarker) {
                         <tbody>${sarprases}</tbody>
                     </table>
                 ` : sarprases}
-            </div>
+                </div>
+            <p class="mt-2 block text-zinc-500"><span class="font-semibold text-red-600">**</span> Sarpras esensial untuk operasional retail</p>
         </div>
     `;
 }
