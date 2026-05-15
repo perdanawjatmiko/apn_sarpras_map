@@ -3,8 +3,6 @@ import 'leaflet/dist/leaflet.css';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import {
     Dialog,
     DialogContent,
@@ -19,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import type { SarprasMarker } from '@/types/sarpras-map';
 
 type RegionOption = { id: number; name: string };
@@ -34,10 +33,6 @@ type FilterState = {
 
 const STATUS_ORDER = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
 const TOTAL_SARPRAS = 16;
-
-function percent(value?: string | null) {
-    return value ? `${Math.round(Number(value) * 100)}%` : '-';
-}
 
 function escapeHtml(value?: string | number | null) {
     return String(value ?? '')
@@ -76,8 +71,8 @@ function statusSortValue(status?: string | null) {
     return index === -1 ? STATUS_ORDER.length : index;
 }
 
-function markerColorClass(marker: SarprasMarker) {
-    const color = markerColor(marker);
+function markerColorClass(marker: SarprasMarker, useRetailReadiness: boolean) {
+    const color = markerColor(marker, useRetailReadiness);
 
     return {
         blue: 'bg-blue-600 shadow-blue-950/40',
@@ -87,7 +82,28 @@ function markerColorClass(marker: SarprasMarker) {
     }[color];
 }
 
-function markerColor(marker: SarprasMarker): MarkerColor {
+function markerColor(marker: SarprasMarker, useRetailReadiness = false): MarkerColor {
+    if (useRetailReadiness) {
+        const mandatoryTotal = Number(marker.mandatory_sarpras_count ?? 0);
+        const installedMandatory = Number(marker.installed_mandatory_sarpras_count ?? 0);
+        const arrivedMandatory = Number(marker.arrived_mandatory_sarpras_count ?? installedMandatory);
+        const percentage = mandatoryTotal > 0 ? (arrivedMandatory / mandatoryTotal) * 100 : 0;
+
+        if (mandatoryTotal > 0 && installedMandatory >= mandatoryTotal) {
+            return 'blue';
+        }
+
+        if (percentage > 70) {
+            return 'emerald';
+        }
+
+        if (percentage > 35) {
+            return 'amber';
+        }
+
+        return 'red';
+    }
+
     const counts = marker.status_counts ?? {};
     const installed = Number(counts.terpasang ?? 0);
     const arrived = installed + Number(counts.tiba ?? 0);
@@ -255,7 +271,7 @@ function FilterControls({
     onReset: () => void;
 }) {
     return (
-        <div className="grid gap-2 md:grid-cols-6">
+        <div className="grid gap-2 md:grid-cols-[repeat(4,minmax(0,1fr))_minmax(260px,auto)_auto]">
             <RegionSelect
                 value={filters.provinceId}
                 placeholder="Provinsi"
@@ -284,15 +300,23 @@ function FilterControls({
                 onValueChange={(villageId) => onChange({ ...filters, villageId })}
             />
             <label className="flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-white px-3 text-sm font-medium whitespace-nowrap text-zinc-950">
-                <Checkbox
+                <Switch
                     checked={filters.retailReady}
-                    onCheckedChange={(checked) => onChange({ ...filters, retailReady: checked === true })}
+                    onCheckedChange={(checked) => onChange({ ...filters, retailReady: checked })}
                 />
-                Hanya Siap retail
+                Lihat Berdasarkan Kesiapan Retail
             </label>
             <Button variant="secondary" onClick={onReset}>
                 <X /> Reset
             </Button>
+        </div>
+    );
+}
+
+function RetailModeNote({ className = '' }: { className?: string }) {
+    return (
+        <div className={`rounded-md border border-amber-200/40 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-950 shadow-lg ${className}`}>
+            Data hanya menghitung sarpras esensial untuk operasional Retail
         </div>
     );
 }
@@ -318,7 +342,6 @@ export function IndonesiaMap({
 
         return markers.filter((marker) => {
             return (!query || marker.name.toLowerCase().includes(query))
-                && (!filters.retailReady || marker.retail_ready)
                 && (!filters.provinceId || marker.province_id === Number(filters.provinceId))
                 && (!filters.cityId || marker.city_id === Number(filters.cityId))
                 && (!filters.districtId || marker.district_id === Number(filters.districtId))
@@ -329,39 +352,69 @@ export function IndonesiaMap({
     const legendCounts = useMemo(() => {
         return filtered.reduce(
             (totals, marker) => {
-                totals[markerColor(marker)]++;
+                totals[markerColor(marker, filters.retailReady)]++;
 
                 return totals;
             },
             { blue: 0, emerald: 0, amber: 0, red: 0 } as Record<MarkerColor, number>,
         );
-    }, [filtered]);
+    }, [filtered, filters.retailReady]);
 
     useEffect(() => {
-        if (!filters.provinceId) {
-            setCities([]);
-            return;
-        }
+        let cancelled = false;
 
-        fetchRegion('cities', { province_id: filters.provinceId }).then(setCities);
+        const request = filters.provinceId
+            ? fetchRegion('cities', { province_id: filters.provinceId })
+            : Promise.resolve([]);
+
+        request
+            .then((options) => {
+                if (!cancelled) {
+                    setCities(options);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [filters.provinceId]);
 
     useEffect(() => {
-        if (!filters.cityId) {
-            setDistricts([]);
-            return;
-        }
+        let cancelled = false;
 
-        fetchRegion('districts', { city_id: filters.cityId }).then(setDistricts);
+        const request = filters.cityId
+            ? fetchRegion('districts', { city_id: filters.cityId })
+            : Promise.resolve([]);
+
+        request
+            .then((options) => {
+                if (!cancelled) {
+                    setDistricts(options);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [filters.cityId]);
 
     useEffect(() => {
-        if (!filters.districtId) {
-            setVillages([]);
-            return;
-        }
+        let cancelled = false;
 
-        fetchRegion('villages', { district_id: filters.districtId }).then(setVillages);
+        const request = filters.districtId
+            ? fetchRegion('villages', { district_id: filters.districtId })
+            : Promise.resolve([]);
+
+        request
+            .then((options) => {
+                if (!cancelled) {
+                    setVillages(options);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [filters.districtId]);
 
     useEffect(() => {
@@ -407,7 +460,7 @@ export function IndonesiaMap({
         filtered.forEach((marker) => {
             const icon = L.divIcon({
                 className: '',
-                html: `<span class="block size-4 rounded-full border-2 border-white shadow-lg ${markerColorClass(marker)}"></span>`,
+                html: `<span class="block size-4 rounded-full border-2 border-white shadow-lg ${markerColorClass(marker, filters.retailReady)}"></span>`,
                 iconSize: [16, 16],
                 iconAnchor: [8, 8],
                 popupAnchor: [0, -8],
@@ -423,6 +476,7 @@ export function IndonesiaMap({
 
             if (filtered.length === 1) {
                 map.current.setView([filtered[0].latitude, filtered[0].longitude], 12);
+
                 return;
             }
 
@@ -433,7 +487,7 @@ export function IndonesiaMap({
                 paddingBottomRight: [300, 40],
             });
         }
-    }, [filtered]);
+    }, [filtered, filters.retailReady]);
 
     const resetFilters = () => {
         setFilters({ query: '', retailReady: false, provinceId: '', cityId: '', districtId: '', villageId: '' });
@@ -456,6 +510,7 @@ export function IndonesiaMap({
                         onChange={setFilters}
                         onReset={resetFilters}
                     />
+                    {filters.retailReady && <RetailModeNote />}
                 </div>
             </div>
 
@@ -483,14 +538,23 @@ export function IndonesiaMap({
                 </Dialog>
             </div>
 
+            {filters.retailReady && (
+                <RetailModeNote className="absolute inset-x-4 top-16 z-20 md:hidden" />
+            )}
+
             <div className="absolute right-4 top-4 z-20 rounded-md border border-white/10 bg-zinc-950/80 px-3 py-2 text-xs text-white shadow-lg backdrop-blur">
                 {filtered.length} / {markers.length} koperasi
             </div>
 
             <div className="absolute right-4 bottom-6 z-20 rounded-md border border-white/10 bg-black-950/50 p-3 text-sm text-white shadow-lg backdrop-blur w-fit">
                 <div className="mb-2 font-semibold">Keterangan Marker</div>
+                {filters.retailReady && (
+                    <div className="mb-2 rounded bg-white/10 px-2 py-1 text-xs font-medium">
+                        Berdasarkan sarpras mandatory retail
+                    </div>
+                )}
                 <div className="grid gap-2.5 font-semibold">
-                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-blue-600" /> 100% terpasang <span className="ml-auto">({legendCounts.blue})</span></div>
+                    <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-blue-600" /> {filters.retailReady ? 'Siap operasional retail' : '100% terpasang'} <span className="ml-auto">({legendCounts.blue})</span></div>
                     <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-emerald-500" /> Lebih dari 70% tiba/terpasang <span className="ml-auto">({legendCounts.emerald})</span></div>
                     <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-amber-400" /> Lebih dari 35% tiba/terpasang <span className="ml-auto">({legendCounts.amber})</span></div>
                     <div className="flex items-center gap-2"><span className="size-3.5 rounded-full bg-red-500" /> Kurang dari 35% tiba/terpasang <span className="ml-auto">({legendCounts.red})</span></div>

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class PublicMapService
 {
-    public const CACHE_KEY = 'public-map:koperasi-markers:v8';
+    public const CACHE_KEY = 'public-map:koperasi-markers:v9';
 
     /**
      * @return array{markers: array<int, array<string, mixed>>, filters: array<string, mixed>, stats: array<string, int>}
@@ -53,10 +53,20 @@ class PublicMapService
                         ->filter(fn ($assignment) => $assignment->sarpras?->is_mandatory && $assignment->status?->name === 'terpasang')
                         ->pluck('sarpras_id')
                         ->unique();
+                    $arrivedMandatorySarprasIds = $koperasi->sarprasAssignments
+                        ->filter(fn ($assignment) => $assignment->sarpras?->is_mandatory && in_array($assignment->status?->name, ['terpasang', 'tiba'], true))
+                        ->pluck('sarpras_id')
+                        ->unique();
                     $fulfilledMandatoryRuleCount = $mandatoryRules
                         ->filter(fn ($sarprases) => $sarprases
                             ->pluck('id')
                             ->intersect($installedMandatorySarprasIds)
+                            ->isNotEmpty())
+                        ->count();
+                    $arrivedMandatoryRuleCount = $mandatoryRules
+                        ->filter(fn ($sarprases) => $sarprases
+                            ->pluck('id')
+                            ->intersect($arrivedMandatorySarprasIds)
                             ->isNotEmpty())
                         ->count();
 
@@ -78,6 +88,7 @@ class PublicMapService
                         'retail_ready' => $mandatoryRuleCount > 0 && $fulfilledMandatoryRuleCount >= $mandatoryRuleCount,
                         'mandatory_sarpras_count' => $mandatoryRuleCount,
                         'installed_mandatory_sarpras_count' => $fulfilledMandatoryRuleCount,
+                        'arrived_mandatory_sarpras_count' => $arrivedMandatoryRuleCount,
                         'delivery_percentage' => $koperasi->delivery_percentage,
                         'installed_percentage' => $koperasi->installed_percentage,
                         'core_percentage' => $koperasi->core_percentage,

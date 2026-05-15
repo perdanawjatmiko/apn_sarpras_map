@@ -15,6 +15,7 @@ export type SarprasMarker = {
     retail_ready?: boolean;
     mandatory_sarpras_count?: number;
     installed_mandatory_sarpras_count?: number;
+    arrived_mandatory_sarpras_count?: number;
     status_counts?: {
         terpasang?: number;
         tiba?: number;
