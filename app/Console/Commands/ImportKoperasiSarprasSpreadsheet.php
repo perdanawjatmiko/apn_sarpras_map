@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class ImportKoperasiSarprasSpreadsheet extends Command
 {
-    private const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/1FQRvzqAaCjlKXKRyXL2-_yL1gEta6cBr/gviz/tq?tqx=out:csv&sheet=template_seed_sarpras_koperasi';
+    private const DEFAULT_URL = 'https://docs.google.com/spreadsheets/d/1YegHsmYnvsKArLqtI8ZpShRLhetvGVuETAM5GHe2KhA/gviz/tq?tqx=out:csv&sheet=template_seed_sarpras_koperasi';
 
     protected $signature = 'sarpras-koperasi:import-spreadsheet
         {--url= : URL CSV spreadsheet yang akan diimport}
