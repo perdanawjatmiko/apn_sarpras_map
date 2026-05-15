@@ -43,31 +43,39 @@ class SarprasController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $this->sarprases->create($request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('sarprases')],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')],
             'description' => ['nullable', 'string'],
             'is_mandatory' => ['boolean'],
-        ]));
+        ]);
+
+        $data['is_mandatory'] = $request->boolean('is_mandatory');
+
+        $this->sarprases->create($data);
 
         return back()->with('success', 'Sarpras dibuat.');
     }
 
-    public function update(Request $request, Sarpras $sarpras): RedirectResponse
+    public function update(Request $request, Sarpras $sarprase): RedirectResponse
     {
-        $this->sarprases->update($sarpras, $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'is_mandatory' => ['boolean'],
-        ]));
+        ]);
+
+        $data['is_mandatory'] = $request->boolean('is_mandatory') ? 1 : 0;
+
+        $this->sarprases->update($sarprase, $data);
 
         return back()->with('success', 'Sarpras diperbarui.');
     }
 
-    public function destroy(Sarpras $sarpras): RedirectResponse
+    public function destroy(Sarpras $sarprase): RedirectResponse
     {
-        $sarpras->delete();
+        $sarprase->delete();
         cache()->forget(PublicMapService::CACHE_KEY);
 
         return back()->with('success', 'Sarpras dihapus.');

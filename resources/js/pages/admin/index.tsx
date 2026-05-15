@@ -1,6 +1,12 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { Database, Download, FileUp, MapPinned, Package, Plus, Search, Trash2, Users } from 'lucide-react';
-import { FormEvent, useMemo, useState } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+} from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -16,6 +22,14 @@ import type { Pagination } from '@/types';
 type Row = Record<string, any>;
 type Option = { id: number | string; name: string };
 type Tab = 'koperasis' | 'sarprases' | 'koperasiSarprases' | 'users';
+type AdminOptions = {
+    koperasis: Option[];
+    sarprases: Option[];
+    statuses: Option[];
+    cities: Option[];
+    districts: Option[];
+    villages: Option[];
+};
 
 const tabs: { key: Tab; label: string; icon: typeof MapPinned }[] = [
     { key: 'koperasis', label: 'Koperasi', icon: MapPinned },
@@ -36,7 +50,7 @@ function text(value: unknown) {
     return value === null || value === undefined || value === '' ? '-' : String(value);
 }
 
-function AdminForm({
+function ResourceForm({
     tab,
     row,
     options,
@@ -44,104 +58,175 @@ function AdminForm({
 }: {
     tab: Tab;
     row?: Row | null;
-    options: { koperasis: Option[]; sarprases: Option[]; statuses: Option[]; cities: Option[]; districts: Option[]; villages: Option[] };
+    options: AdminOptions;
     onDone: () => void;
 }) {
-    const defaults = useMemo(() => {
-        if (tab === 'users') {
-            return { name: row?.name ?? '', email: row?.email ?? '', password: '' };
-        }
+    if (tab === 'sarprases') {
+        return <SarprasForm row={row} onDone={onDone} />;
+    }
 
-        if (tab === 'sarprases') {
-            return { name: row?.name ?? '', slug: row?.slug ?? '', description: row?.description ?? '', is_mandatory: Boolean(row?.is_mandatory) };
-        }
+    if (tab === 'koperasiSarprases') {
+        return <KoperasiSarprasForm row={row} options={options} onDone={onDone} />;
+    }
 
-        if (tab === 'koperasiSarprases') {
-            return {
-                koperasi_id: row?.koperasi_id ?? row?.koperasi?.id ?? '',
-                sarpras_id: row?.sarpras_id ?? row?.sarpras?.id ?? '',
-                status_id: row?.status_id ?? row?.status?.id ?? '',
-            };
-        }
+    if (tab === 'users') {
+        return <UserForm row={row} onDone={onDone} />;
+    }
 
-        return {
-            ai_id: row?.ai_id ?? '',
-            name: row?.name ?? '',
-            village_id: row?.village_id ?? '',
-            district_id: row?.district_id ?? '',
-            city_id: row?.city_id ?? '',
-            province_id: row?.province_id ?? '',
-            latitude: row?.latitude ?? '',
-            longitude: row?.longitude ?? '',
-            delivery_percentage: row?.delivery_percentage ?? '',
-            installed_percentage: row?.installed_percentage ?? '',
-            core_percentage: row?.core_percentage ?? '',
-        };
-    }, [options, row, tab]);
-    const form = useForm(defaults);
+    return <KoperasiForm row={row} options={options} onDone={onDone} />;
+}
+
+function SarprasForm({ row, onDone }: { row?: Row | null; onDone: () => void }) {
+    const form = useForm({
+        name: row?.name ?? '',
+        slug: row?.slug ?? '',
+        description: row?.description ?? '',
+        is_mandatory: row?.is_mandatory === true || row?.is_mandatory === 1 || row?.is_mandatory === '1',
+    });
     const isEdit = Boolean(row?.id);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        const url = isEdit ? `/admin/${routeSegment(tab)}/${row?.id}` : `/admin/${routeSegment(tab)}`;
+
+        form.transform((data) => ({
+            ...data,
+            is_mandatory: Boolean(data.is_mandatory),
+        }));
+
+        const url = isEdit ? `/admin/sarprases/${row?.id}` : '/admin/sarprases';
         const method = isEdit ? form.put : form.post;
 
         method(url, {
             preserveScroll: true,
+            preserveState: false,
             onSuccess: onDone,
         });
     };
 
     return (
         <form onSubmit={submit} className="grid gap-3">
-            {tab === 'users' && (
-                <>
-                    <Field label="Nama" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
-                    <Field label="Email" type="email" value={form.data.email} onChange={(value) => form.setData('email', value)} error={form.errors.email} />
-                    <Field label={isEdit ? 'Password baru' : 'Password'} type="password" value={form.data.password} onChange={(value) => form.setData('password', value)} error={form.errors.password} />
-                </>
-            )}
-            {tab === 'sarprases' && (
-                <>
-                    <Field label="Nama sarpras" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
-                    <Field label="Slug" value={form.data.slug} onChange={(value) => form.setData('slug', value)} error={form.errors.slug} />
-                    <Field label="Deskripsi" value={form.data.description} onChange={(value) => form.setData('description', value)} error={form.errors.description} />
-                    <label className="flex items-center gap-2 text-sm font-medium">
-                        <Checkbox
-                            checked={Boolean(form.data.is_mandatory)}
-                            onCheckedChange={(checked) => form.setData('is_mandatory', checked === true)}
-                        />
-                        Wajib untuk operasional retail
-                    </label>
-                </>
-            )}
-            {tab === 'koperasiSarprases' && (
-                <>
-                    <SelectField label="Koperasi" value={form.data.koperasi_id} options={options.koperasis} onChange={(value) => form.setData('koperasi_id', value)} error={form.errors.koperasi_id} />
-                    <SelectField label="Sarpras" value={form.data.sarpras_id} options={options.sarprases} onChange={(value) => form.setData('sarpras_id', value)} error={form.errors.sarpras_id} />
-                    <SelectField label="Status" value={form.data.status_id} options={options.statuses} onChange={(value) => form.setData('status_id', value)} error={form.errors.status_id} />
-                </>
-            )}
-            {tab === 'koperasis' && (
-                <>
-                    <Field label="AI ID" value={form.data.ai_id} onChange={(value) => form.setData('ai_id', value)} error={form.errors.ai_id} />
-                    <Field label="Nama koperasi" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
-                    <div className="grid gap-3 md:grid-cols-3">
-                        <SelectField label="Desa" value={form.data.village_id} options={options.villages} onChange={(value) => form.setData('village_id', value)} error={form.errors.village_id} />
-                        <SelectField label="Kecamatan" value={form.data.district_id} options={options.districts} onChange={(value) => form.setData('district_id', value)} error={form.errors.district_id} />
-                        <SelectField label="Kota" value={form.data.city_id} options={options.cities} onChange={(value) => form.setData('city_id', value)} error={form.errors.city_id} />
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                        <Field label="Latitude" value={form.data.latitude} onChange={(value) => form.setData('latitude', value)} error={form.errors.latitude} />
-                        <Field label="Longitude" value={form.data.longitude} onChange={(value) => form.setData('longitude', value)} error={form.errors.longitude} />
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-3">
-                        <Field label="Pengiriman" value={form.data.delivery_percentage} onChange={(value) => form.setData('delivery_percentage', value)} error={form.errors.delivery_percentage} />
-                        <Field label="Terpasang" value={form.data.installed_percentage} onChange={(value) => form.setData('installed_percentage', value)} error={form.errors.installed_percentage} />
-                        <Field label="Inti" value={form.data.core_percentage} onChange={(value) => form.setData('core_percentage', value)} error={form.errors.core_percentage} />
-                    </div>
-                </>
-            )}
+            <Field label="Nama sarpras" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
+            <Field label="Slug" value={form.data.slug} onChange={(value) => form.setData('slug', value)} error={form.errors.slug} />
+            <Field label="Deskripsi" value={form.data.description} onChange={(value) => form.setData('description', value)} error={form.errors.description} />
+            <label className="flex items-center gap-2 text-sm font-medium">
+                <Checkbox
+                    checked={Boolean(form.data.is_mandatory)}
+                    onCheckedChange={(checked) => form.setData('is_mandatory', checked === true)}
+                />
+                Wajib untuk operasional retail
+            </label>
+            {form.errors.is_mandatory && <span className="text-xs text-red-600">{form.errors.is_mandatory}</span>}
+            <Button disabled={form.processing} className="mt-2">{isEdit ? 'Simpan perubahan' : 'Tambah data'}</Button>
+        </form>
+    );
+}
+
+function UserForm({ row, onDone }: { row?: Row | null; onDone: () => void }) {
+    const form = useForm({
+        name: row?.name ?? '',
+        email: row?.email ?? '',
+        password: '',
+    });
+    const isEdit = Boolean(row?.id);
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        const url = isEdit ? `/admin/users/${row?.id}` : '/admin/users';
+        const method = isEdit ? form.put : form.post;
+
+        method(url, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: onDone,
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="grid gap-3">
+            <Field label="Nama" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
+            <Field label="Email" type="email" value={form.data.email} onChange={(value) => form.setData('email', value)} error={form.errors.email} />
+            <Field label={isEdit ? 'Password baru' : 'Password'} type="password" value={form.data.password} onChange={(value) => form.setData('password', value)} error={form.errors.password} />
+            <Button disabled={form.processing} className="mt-2">{isEdit ? 'Simpan perubahan' : 'Tambah data'}</Button>
+        </form>
+    );
+}
+
+function KoperasiSarprasForm({ row, options, onDone }: { row?: Row | null; options: AdminOptions; onDone: () => void }) {
+    const form = useForm({
+        koperasi_id: row?.koperasi_id ?? row?.koperasi?.id ?? '',
+        sarpras_id: row?.sarpras_id ?? row?.sarpras?.id ?? '',
+        status_id: row?.status_id ?? row?.status?.id ?? '',
+    });
+    const isEdit = Boolean(row?.id);
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        const url = isEdit ? `/admin/koperasi-sarprases/${row?.id}` : '/admin/koperasi-sarprases';
+        const method = isEdit ? form.put : form.post;
+
+        method(url, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: onDone,
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="grid gap-3">
+            <SelectField label="Koperasi" value={form.data.koperasi_id} options={options.koperasis} onChange={(value) => form.setData('koperasi_id', value)} error={form.errors.koperasi_id} />
+            <SelectField label="Sarpras" value={form.data.sarpras_id} options={options.sarprases} onChange={(value) => form.setData('sarpras_id', value)} error={form.errors.sarpras_id} />
+            <SelectField label="Status" value={form.data.status_id} options={options.statuses} onChange={(value) => form.setData('status_id', value)} error={form.errors.status_id} />
+            <Button disabled={form.processing} className="mt-2">{isEdit ? 'Simpan perubahan' : 'Tambah data'}</Button>
+        </form>
+    );
+}
+
+function KoperasiForm({ row, options, onDone }: { row?: Row | null; options: AdminOptions; onDone: () => void }) {
+    const form = useForm({
+        ai_id: row?.ai_id ?? '',
+        name: row?.name ?? '',
+        village_id: row?.village_id ?? '',
+        district_id: row?.district_id ?? '',
+        city_id: row?.city_id ?? '',
+        province_id: row?.province_id ?? '',
+        latitude: row?.latitude ?? '',
+        longitude: row?.longitude ?? '',
+        delivery_percentage: row?.delivery_percentage ?? '',
+        installed_percentage: row?.installed_percentage ?? '',
+        core_percentage: row?.core_percentage ?? '',
+    });
+    const isEdit = Boolean(row?.id);
+
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        const url = isEdit ? `/admin/koperasis/${row?.id}` : '/admin/koperasis';
+        const method = isEdit ? form.put : form.post;
+
+        method(url, {
+            preserveScroll: true,
+            preserveState: false,
+            onSuccess: onDone,
+        });
+    };
+
+    return (
+        <form onSubmit={submit} className="grid gap-3">
+            <Field label="AI ID" value={form.data.ai_id} onChange={(value) => form.setData('ai_id', value)} error={form.errors.ai_id} />
+            <Field label="Nama koperasi" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
+            <div className="grid gap-3 md:grid-cols-3">
+                <SelectField label="Desa" value={form.data.village_id} options={options.villages} onChange={(value) => form.setData('village_id', value)} error={form.errors.village_id} />
+                <SelectField label="Kecamatan" value={form.data.district_id} options={options.districts} onChange={(value) => form.setData('district_id', value)} error={form.errors.district_id} />
+                <SelectField label="Kota" value={form.data.city_id} options={options.cities} onChange={(value) => form.setData('city_id', value)} error={form.errors.city_id} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+                <Field label="Latitude" value={form.data.latitude} onChange={(value) => form.setData('latitude', value)} error={form.errors.latitude} />
+                <Field label="Longitude" value={form.data.longitude} onChange={(value) => form.setData('longitude', value)} error={form.errors.longitude} />
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+                <Field label="Pengiriman" value={form.data.delivery_percentage} onChange={(value) => form.setData('delivery_percentage', value)} error={form.errors.delivery_percentage} />
+                <Field label="Terpasang" value={form.data.installed_percentage} onChange={(value) => form.setData('installed_percentage', value)} error={form.errors.installed_percentage} />
+                <Field label="Inti" value={form.data.core_percentage} onChange={(value) => form.setData('core_percentage', value)} error={form.errors.core_percentage} />
+            </div>
             <Button disabled={form.processing} className="mt-2">{isEdit ? 'Simpan perubahan' : 'Tambah data'}</Button>
         </form>
     );
@@ -242,11 +327,12 @@ export default function AdminIndex({
     search: string;
     stats: Record<string, number>;
     records: Pagination<Row>;
-    options: { koperasis: Option[]; sarprases: Option[]; statuses: Option[]; cities: Option[]; districts: Option[]; villages: Option[] };
+    options: AdminOptions;
 }) {
     const tab = resource;
     const [editing, setEditing] = useState<Row | null>(null);
     const [open, setOpen] = useState(false);
+    const { flash } = usePage().props;
 
     const submitSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -262,6 +348,18 @@ export default function AdminIndex({
         <>
             <Head title={title} />
             <div className="flex flex-col gap-5 p-4 md:p-6">
+                {flash.success && (
+                    <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900">
+                        <AlertTitle>Berhasil</AlertTitle>
+                        <AlertDescription className="text-emerald-800">{flash.success}</AlertDescription>
+                    </Alert>
+                )}
+                {flash.error && (
+                    <Alert variant="destructive">
+                        <AlertTitle>Gagal</AlertTitle>
+                        <AlertDescription>{flash.error}</AlertDescription>
+                    </Alert>
+                )}
                 <div className="grid gap-3 md:grid-cols-4">
                     {Object.entries(stats).map(([key, value]) => (
                         <div key={key} className="rounded-lg border bg-card p-4 shadow-xs">
@@ -310,7 +408,7 @@ export default function AdminIndex({
                             </DialogTrigger>
                             <DialogContent className="sm:max-w-3xl">
                                 <DialogHeader><DialogTitle>{editing ? 'Edit' : 'Tambah'} {tabs.find((item) => item.key === tab)?.label}</DialogTitle></DialogHeader>
-                                <AdminForm tab={tab} row={editing} options={options} onDone={() => setOpen(false)} />
+                                <ResourceForm key={`${tab}-${editing?.id ?? 'new'}`} tab={tab} row={editing} options={options} onDone={() => setOpen(false)} />
                             </DialogContent>
                         </Dialog>
                     </div>
@@ -330,7 +428,16 @@ export default function AdminIndex({
                                     {columns(tab).map((column) => <td key={column} className="max-w-64 truncate p-3">{text(row[column])}</td>)}
                                     <td className="sticky right-0 bg-card p-3 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.8)]">
                                         <div className="flex gap-2">
-                                            <Button size="sm" variant="outline" onClick={() => { setEditing(row); setOpen(true); }}>Edit</Button>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setEditing(row);
+                                                    setOpen(true);
+                                                }}
+                                            >
+                                                Edit
+                                            </Button>
                                             <Button size="sm" variant="destructive" onClick={() => remove(row)}><Trash2 /></Button>
                                         </div>
                                     </td>
