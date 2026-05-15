@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css';
 import { SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import {
     Dialog,
@@ -282,14 +283,13 @@ function FilterControls({
                 disabled={!filters.districtId}
                 onValueChange={(villageId) => onChange({ ...filters, villageId })}
             />
-            <Button
-                type="button"
-                variant={filters.retailReady ? 'destructive' : 'secondary'}
-                className="justify-center whitespace-nowrap"
-                onClick={() => onChange({ ...filters, retailReady: !filters.retailReady })}
-            >
-                Siap retail
-            </Button>
+            <label className="flex h-9 items-center justify-center gap-2 rounded-md border border-white/15 bg-white px-3 text-sm font-medium whitespace-nowrap text-zinc-950">
+                <Checkbox
+                    checked={filters.retailReady}
+                    onCheckedChange={(checked) => onChange({ ...filters, retailReady: checked === true })}
+                />
+                Hanya Siap retail
+            </label>
             <Button variant="secondary" onClick={onReset}>
                 <X /> Reset
             </Button>
