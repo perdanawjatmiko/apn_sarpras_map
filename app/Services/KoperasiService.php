@@ -114,7 +114,21 @@ class KoperasiService
 
     private function decimal(?string $value): ?float
     {
-        return is_numeric($value) ? (float) $value : null;
+        if (blank($value)) {
+            return null;
+        }
+
+        $normalized = str_replace(',', '.', trim($value));
+        $isPercentage = str_contains($normalized, '%');
+        $normalized = str_replace('%', '', $normalized);
+
+        if (! is_numeric($normalized)) {
+            return null;
+        }
+
+        $number = (float) $normalized;
+
+        return $isPercentage ? $number / 100 : $number;
     }
 
     private function integer(?string $value): ?int

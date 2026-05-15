@@ -198,18 +198,10 @@ class KoperasiSarprasService
     {
         return in_array($header, [
             'nama_induk_koperasi_nik',
-            'nama_desa_kel',
-            'nama',
-            'kecamatan',
-            'kab_kota',
-            'kabupaten_kota',
-            'provinsi',
             'province',
             'city',
             'district',
             'village',
-            'latitude',
-            'longitude',
             'ket',
         ], true) || str_starts_with($header, 'persentase');
     }
