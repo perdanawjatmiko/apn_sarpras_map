@@ -101,6 +101,7 @@ class PublicMapService
                             ->map(fn ($assignment) => [
                                 'name' => $assignment->sarpras?->name,
                                 'status' => $assignment->status?->name ?? 'tanpa_status',
+                                'is_mandatory' => (bool) $assignment->sarpras?->is_mandatory,
                             ])
                             ->values()
                             ->all(),
