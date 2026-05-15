@@ -75,10 +75,10 @@ function markerColorClass(marker: SarprasMarker, useRetailReadiness: boolean) {
     const color = markerColor(marker, useRetailReadiness);
 
     return {
-        blue: 'bg-blue-600 shadow-blue-950/40',
-        emerald: 'bg-emerald-500 shadow-emerald-950/40',
-        amber: 'bg-amber-400 shadow-amber-950/40',
-        red: 'bg-red-500 shadow-red-950/40',
+        blue: 'bg-blue-600/60 border-blue-700 shadow-blue-950/40',
+        emerald: 'bg-emerald-500/60 border-emerald-600 shadow-emerald-950/40',
+        amber: 'bg-yellow-400/60 border-yellow-500 shadow-yellow-950/40',
+        red: 'bg-red-500/60 border-red-600 shadow-red-950/40',
     }[color];
 }
 
@@ -460,7 +460,7 @@ export function IndonesiaMap({
         filtered.forEach((marker) => {
             const icon = L.divIcon({
                 className: '',
-                html: `<span class="block size-4 rounded-full border-2 border-white shadow-lg ${markerColorClass(marker, filters.retailReady)}"></span>`,
+                html: `<span class="block size-3 rounded-full border shadow-lg ${markerColorClass(marker, filters.retailReady)}"></span>`,
                 iconSize: [16, 16],
                 iconAnchor: [8, 8],
                 popupAnchor: [0, -8],
