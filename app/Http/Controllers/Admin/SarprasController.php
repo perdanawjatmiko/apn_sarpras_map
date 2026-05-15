@@ -47,6 +47,7 @@ class SarprasController extends Controller
             'name' => ['required', 'string', 'max:255', Rule::unique('sarprases')],
             'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')],
             'description' => ['nullable', 'string'],
+            'is_mandatory' => ['boolean'],
         ]));
 
         return back()->with('success', 'Sarpras dibuat.');
@@ -55,9 +56,10 @@ class SarprasController extends Controller
     public function update(Request $request, Sarpras $sarpras): RedirectResponse
     {
         $this->sarprases->update($sarpras, $request->validate([
-            'name' => ['required', 'string', 'max:255', Rule::unique('sarprases')->ignore($sarpras)],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('sarprases')->ignore($sarpras)],
+            'name' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
+            'is_mandatory' => ['boolean'],
         ]));
 
         return back()->with('success', 'Sarpras diperbarui.');

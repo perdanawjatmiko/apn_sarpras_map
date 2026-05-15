@@ -7,10 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
-#[Fillable(['name', 'slug', 'description'])]
+#[Fillable(['name', 'slug', 'description', 'is_mandatory'])]
 class Sarpras extends Model
 {
     protected $table = 'sarprases';
+
+    protected function casts(): array
+    {
+        return [
+            'is_mandatory' => 'boolean',
+        ];
+    }
 
     protected static function booted(): void
     {

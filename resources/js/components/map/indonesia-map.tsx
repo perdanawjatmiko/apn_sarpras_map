@@ -24,6 +24,7 @@ type RegionOption = { id: number; name: string };
 type MarkerColor = 'blue' | 'emerald' | 'amber' | 'red';
 type FilterState = {
     query: string;
+    retailReady: boolean;
     provinceId: string;
     cityId: string;
     districtId: string;
@@ -253,13 +254,7 @@ function FilterControls({
     onReset: () => void;
 }) {
     return (
-        <div className="grid gap-2 md:grid-cols-5">
-            {/* <Input
-                value={filters.query}
-                placeholder="Cari nama koperasi"
-                className="border-white/15 bg-white text-zinc-950 placeholder:text-zinc-500"
-                onChange={(event) => onChange({ ...filters, query: event.target.value })}
-            /> */}
+        <div className="grid gap-2 md:grid-cols-6">
             <RegionSelect
                 value={filters.provinceId}
                 placeholder="Provinsi"
@@ -287,6 +282,14 @@ function FilterControls({
                 disabled={!filters.districtId}
                 onValueChange={(villageId) => onChange({ ...filters, villageId })}
             />
+            <Button
+                type="button"
+                variant={filters.retailReady ? 'destructive' : 'secondary'}
+                className="justify-center whitespace-nowrap"
+                onClick={() => onChange({ ...filters, retailReady: !filters.retailReady })}
+            >
+                Siap retail
+            </Button>
             <Button variant="secondary" onClick={onReset}>
                 <X /> Reset
             </Button>
@@ -305,7 +308,7 @@ export function IndonesiaMap({
     const map = useRef<L.Map | null>(null);
     const markerLayer = useRef<L.LayerGroup | null>(null);
     const hasFitInitialBounds = useRef(false);
-    const [filters, setFilters] = useState<FilterState>({ query: '', provinceId: '', cityId: '', districtId: '', villageId: '' });
+    const [filters, setFilters] = useState<FilterState>({ query: '', retailReady: false, provinceId: '', cityId: '', districtId: '', villageId: '' });
     const [cities, setCities] = useState<RegionOption[]>([]);
     const [districts, setDistricts] = useState<RegionOption[]>([]);
     const [villages, setVillages] = useState<RegionOption[]>([]);
@@ -315,6 +318,7 @@ export function IndonesiaMap({
 
         return markers.filter((marker) => {
             return (!query || marker.name.toLowerCase().includes(query))
+                && (!filters.retailReady || marker.retail_ready)
                 && (!filters.provinceId || marker.province_id === Number(filters.provinceId))
                 && (!filters.cityId || marker.city_id === Number(filters.cityId))
                 && (!filters.districtId || marker.district_id === Number(filters.districtId))
@@ -432,7 +436,7 @@ export function IndonesiaMap({
     }, [filtered]);
 
     const resetFilters = () => {
-        setFilters({ query: '', provinceId: '', cityId: '', districtId: '', villageId: '' });
+        setFilters({ query: '', retailReady: false, provinceId: '', cityId: '', districtId: '', villageId: '' });
     };
 
     return (

@@ -12,6 +12,9 @@ export type SarprasMarker = {
     district?: string | null;
     village?: string | null;
     sarpras_count: number;
+    retail_ready?: boolean;
+    mandatory_sarpras_count?: number;
+    installed_mandatory_sarpras_count?: number;
     status_counts?: {
         terpasang?: number;
         tiba?: number;

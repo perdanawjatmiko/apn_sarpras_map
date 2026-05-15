@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Cache;
 
 class PublicMapService
 {
-    public const CACHE_KEY = 'public-map:koperasi-markers:v6';
+    public const CACHE_KEY = 'public-map:koperasi-markers:v7';
 
     /**
      * @return array{markers: array<int, array<string, mixed>>, filters: array<string, mixed>, stats: array<string, int>}
@@ -17,6 +17,8 @@ class PublicMapService
     public function data(): array
     {
         return Cache::remember(self::CACHE_KEY, now()->addMinutes(10), function () {
+            $mandatorySarprasCount = Sarpras::query()->where('is_mandatory', true)->count();
+
             $markers = Koperasi::query()
                 ->located()
                 ->select(['id', 'name', 'province_id', 'city_id', 'district_id', 'village_id', 'latitude', 'longitude', 'delivery_percentage', 'installed_percentage', 'core_percentage'])
@@ -25,14 +27,14 @@ class PublicMapService
                     'city:id,name',
                     'district:id,name',
                     'village:id,name',
-                    'sarprasAssignments.sarpras:id,name',
+                    'sarprasAssignments.sarpras:id,name,is_mandatory',
                     'sarprasAssignments.status:id,name',
                 ])
                 ->withCount('sarprasAssignments')
                 ->latest('id')
                 ->limit(10000)
                 ->get()
-                ->map(function (Koperasi $koperasi) {
+                ->map(function (Koperasi $koperasi) use ($mandatorySarprasCount) {
                     $statusOrder = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
                     $statusCounts = array_fill_keys(Status::NAMES, 0);
 
@@ -40,6 +42,12 @@ class PublicMapService
                         $status = $assignment->status?->name ?? 'tanpa_status';
                         $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
                     }
+
+                    $installedMandatoryCount = $koperasi->sarprasAssignments
+                        ->filter(fn ($assignment) => $assignment->sarpras?->is_mandatory && $assignment->status?->name === 'terpasang')
+                        ->pluck('sarpras_id')
+                        ->unique()
+                        ->count();
 
                     return [
                         'id' => $koperasi->id,
@@ -56,6 +64,9 @@ class PublicMapService
                         'village' => $koperasi->village?->name,
                         'sarpras_count' => $koperasi->sarpras_assignments_count,
                         'status_counts' => $statusCounts,
+                        'retail_ready' => $mandatorySarprasCount > 0 && $installedMandatoryCount >= $mandatorySarprasCount,
+                        'mandatory_sarpras_count' => $mandatorySarprasCount,
+                        'installed_mandatory_sarpras_count' => $installedMandatoryCount,
                         'delivery_percentage' => $koperasi->delivery_percentage,
                         'installed_percentage' => $koperasi->installed_percentage,
                         'core_percentage' => $koperasi->core_percentage,

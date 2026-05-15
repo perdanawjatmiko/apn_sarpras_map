@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { Database, Download, FileUp, MapPinned, Package, Plus, Search, Trash2, Users } from 'lucide-react';
 import { FormEvent, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
     Dialog,
     DialogContent,
@@ -24,6 +25,10 @@ const tabs: { key: Tab; label: string; icon: typeof MapPinned }[] = [
 ];
 
 function text(value: unknown) {
+    if (typeof value === 'boolean') {
+        return value ? 'Ya' : 'Tidak';
+    }
+
     if (value && typeof value === 'object' && 'name' in value) {
         return String((value as { name?: string }).name ?? '-');
     }
@@ -48,7 +53,7 @@ function AdminForm({
         }
 
         if (tab === 'sarprases') {
-            return { name: row?.name ?? '', slug: row?.slug ?? '', description: row?.description ?? '' };
+            return { name: row?.name ?? '', slug: row?.slug ?? '', description: row?.description ?? '', is_mandatory: Boolean(row?.is_mandatory) };
         }
 
         if (tab === 'koperasiSarprases') {
@@ -101,6 +106,13 @@ function AdminForm({
                     <Field label="Nama sarpras" value={form.data.name} onChange={(value) => form.setData('name', value)} error={form.errors.name} />
                     <Field label="Slug" value={form.data.slug} onChange={(value) => form.setData('slug', value)} error={form.errors.slug} />
                     <Field label="Deskripsi" value={form.data.description} onChange={(value) => form.setData('description', value)} error={form.errors.description} />
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                        <Checkbox
+                            checked={Boolean(form.data.is_mandatory)}
+                            onCheckedChange={(checked) => form.setData('is_mandatory', checked === true)}
+                        />
+                        Wajib untuk operasional retail
+                    </label>
                 </>
             )}
             {tab === 'koperasiSarprases' && (
@@ -207,7 +219,7 @@ function columns(tab: Tab) {
     }
 
     if (tab === 'sarprases') {
-        return ['name', 'slug', 'description'];
+        return ['name', 'slug', 'description', 'is_mandatory'];
     }
 
     if (tab === 'koperasiSarprases') {

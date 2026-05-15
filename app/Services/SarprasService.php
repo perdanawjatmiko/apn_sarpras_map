@@ -73,7 +73,11 @@ class SarprasService
 
             Sarpras::updateOrCreate(
                 ['slug' => Str::slug($name)],
-                ['name' => $name, 'description' => $row[1] ?? null]
+                [
+                    'name' => $name,
+                    'description' => $row[1] ?? null,
+                    'is_mandatory' => $this->boolean($row[2] ?? null),
+                ]
             );
             $count++;
         }
@@ -81,5 +85,14 @@ class SarprasService
         Cache::forget(PublicMapService::CACHE_KEY);
 
         return $count;
+    }
+
+    private function boolean(?string $value): bool
+    {
+        if (blank($value)) {
+            return false;
+        }
+
+        return in_array(Str::of($value)->lower()->squish()->toString(), ['1', 'true', 'ya', 'yes', 'wajib', 'mandatory'], true);
     }
 }
