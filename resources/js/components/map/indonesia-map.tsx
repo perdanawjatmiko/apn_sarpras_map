@@ -446,14 +446,14 @@ export function IndonesiaMap({
         canvasRenderer.current = L.canvas({ padding: 0.5 });
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+            attribution: '&copy PT. AGRINAS PANGAN NUSANTARA',
             maxZoom: 18,
             updateWhenIdle: true,
             updateWhenZooming: false,
         }).addTo(map.current);
 
         labelLayer.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Boundaries and labels &copy; Esri',
+            attribution: '',
             maxZoom: 18,
             pane: 'overlayPane',
             updateWhenIdle: true,
