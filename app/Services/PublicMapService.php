@@ -9,7 +9,9 @@ use Illuminate\Support\Facades\Cache;
 
 class PublicMapService
 {
-    public const CACHE_KEY = 'public-map:koperasi-markers:v9';
+    public const CACHE_KEY = 'public-map:koperasi-markers:v10';
+
+    private const INSTALLATION_EXEMPT_SLUGS = ['pickup-4x4', 'motor-bak-roda-3', 'truk'];
 
     /**
      * @return array{markers: array<int, array<string, mixed>>, filters: array<string, mixed>, stats: array<string, int>}
@@ -33,7 +35,7 @@ class PublicMapService
                     'city:id,name',
                     'district:id,name',
                     'village:id,name',
-                    'sarprasAssignments.sarpras:id,name,is_mandatory,mandatory_group',
+                    'sarprasAssignments.sarpras:id,name,slug,is_mandatory,mandatory_group',
                     'sarprasAssignments.status:id,name',
                 ])
                 ->withCount('sarprasAssignments')
@@ -45,12 +47,16 @@ class PublicMapService
                     $statusCounts = array_fill_keys(Status::NAMES, 0);
 
                     foreach ($koperasi->sarprasAssignments as $assignment) {
-                        $status = $assignment->status?->name ?? 'tanpa_status';
+                        $status = $this->effectiveStatus(
+                            $assignment->status?->name,
+                            $assignment->sarpras?->slug,
+                        );
                         $statusCounts[$status] = ($statusCounts[$status] ?? 0) + 1;
                     }
 
                     $installedMandatorySarprasIds = $koperasi->sarprasAssignments
-                        ->filter(fn ($assignment) => $assignment->sarpras?->is_mandatory && $assignment->status?->name === 'terpasang')
+                        ->filter(fn ($assignment) => $assignment->sarpras?->is_mandatory
+                            && $this->effectiveStatus($assignment->status?->name, $assignment->sarpras?->slug) === 'terpasang')
                         ->pluck('sarpras_id')
                         ->unique();
                     $arrivedMandatorySarprasIds = $koperasi->sarprasAssignments
@@ -101,6 +107,7 @@ class PublicMapService
                             ->map(fn ($assignment) => [
                                 'name' => $assignment->sarpras?->name,
                                 'status' => $assignment->status?->name ?? 'tanpa_status',
+                                'effective_status' => $this->effectiveStatus($assignment->status?->name, $assignment->sarpras?->slug),
                                 'is_mandatory' => (bool) $assignment->sarpras?->is_mandatory,
                             ])
                             ->values()
@@ -125,5 +132,16 @@ class PublicMapService
                 ],
             ];
         });
+    }
+
+    private function effectiveStatus(?string $status, ?string $sarprasSlug): string
+    {
+        $status ??= 'tanpa_status';
+
+        if ($status === 'tiba' && in_array($sarprasSlug, self::INSTALLATION_EXEMPT_SLUGS, true)) {
+            return 'terpasang';
+        }
+
+        return $status;
     }
 }

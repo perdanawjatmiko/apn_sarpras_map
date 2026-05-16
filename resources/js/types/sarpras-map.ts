@@ -28,8 +28,8 @@ export type SarprasMarker = {
     installed_percentage?: string | null;
     core_percentage?: string | null;
     sarprases:
-        | { name: string; status?: string | null; is_mandatory?: boolean }[]
-        | Record<string, { name: string; status?: string | null; is_mandatory?: boolean }>;
+        | { name: string; status?: string | null; effective_status?: string | null; is_mandatory?: boolean }[]
+        | Record<string, { name: string; status?: string | null; effective_status?: string | null; is_mandatory?: boolean }>;
 };
 
 export type Pagination<T> = {

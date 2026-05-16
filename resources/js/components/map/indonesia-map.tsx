@@ -133,7 +133,7 @@ function popupContent(marker: SarprasMarker) {
             return first.is_mandatory ? -1 : 1;
         }
 
-        return statusSortValue(first.status) - statusSortValue(second.status);
+        return statusSortValue(first.effective_status ?? first.status) - statusSortValue(second.effective_status ?? second.status);
     });
     const countedSarprases = sortedSarprases.filter((item) => item.status !== 'tanpa_status').length;
     const counts = marker.status_counts ?? {};
@@ -158,8 +158,8 @@ function popupContent(marker: SarprasMarker) {
                         </span>
                     </td>
                     <td class="w-28 py-1.5 pl-2 pr-2 align-top text-right">
-                        <span class="inline-flex max-w-full items-center justify-center rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize leading-tight ${statusBadgeClass(item.status)}">
-                            <span class="truncate">${escapeHtml(item.status ?? '-')}</span>
+                        <span class="inline-flex max-w-full items-center justify-center rounded-full border px-2 py-0.5 text-[11px] font-medium capitalize leading-tight ${statusBadgeClass(item.effective_status ?? item.status)}">
+                            <span class="truncate">${escapeHtml(item.effective_status ?? item.status ?? '-')}</span>
                         </span>
                     </td>
                 </tr>
