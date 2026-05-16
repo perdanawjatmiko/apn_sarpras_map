@@ -33,6 +33,7 @@ type FilterState = {
 
 const STATUS_ORDER = ['terpasang', 'tiba', 'pengiriman', 'transit', 'tanpa_status'];
 const TOTAL_SARPRAS = 16;
+const MARKER_RENDER_BATCH_SIZE = 250;
 
 function escapeHtml(value?: string | number | null) {
     return String(value ?? '')
@@ -71,14 +72,14 @@ function statusSortValue(status?: string | null) {
     return index === -1 ? STATUS_ORDER.length : index;
 }
 
-function markerColorClass(marker: SarprasMarker, useRetailReadiness: boolean) {
+function markerStyle(marker: SarprasMarker, useRetailReadiness: boolean) {
     const color = markerColor(marker, useRetailReadiness);
 
     return {
-        blue: 'bg-blue-600/60 border-blue-700 shadow-blue-950/40',
-        emerald: 'bg-emerald-500/60 border-emerald-600 shadow-emerald-950/40',
-        amber: 'bg-yellow-400/60 border-yellow-500 shadow-yellow-950/40',
-        red: 'bg-red-500/60 border-red-600 shadow-red-950/40',
+        blue: { border: '#1d4ed8', fill: '#2563eb' },
+        emerald: { border: '#059669', fill: '#10b981' },
+        amber: { border: '#eab308', fill: '#facc15' },
+        red: { border: '#dc2626', fill: '#ef4444' },
     }[color];
 }
 
@@ -338,7 +339,10 @@ export function IndonesiaMap({
     const mapElement = useRef<HTMLDivElement | null>(null);
     const map = useRef<L.Map | null>(null);
     const markerLayer = useRef<L.LayerGroup | null>(null);
+    const labelLayer = useRef<L.TileLayer | null>(null);
+    const canvasRenderer = useRef<L.Canvas | null>(null);
     const hasFitInitialBounds = useRef(false);
+    const renderToken = useRef(0);
     const [filters, setFilters] = useState<FilterState>({ query: '', retailReady: false, provinceId: '', cityId: '', districtId: '', villageId: '' });
     const [cities, setCities] = useState<RegionOption[]>([]);
     const [districts, setDistricts] = useState<RegionOption[]>([]);
@@ -354,7 +358,7 @@ export function IndonesiaMap({
                 && (!filters.districtId || marker.district_id === Number(filters.districtId))
                 && (!filters.villageId || marker.village_id === Number(filters.villageId));
         });
-    }, [markers, filters]);
+    }, [markers, filters.query, filters.provinceId, filters.cityId, filters.districtId, filters.villageId]);
 
     const legendCounts = useMemo(() => {
         return filtered.reduce(
@@ -435,25 +439,53 @@ export function IndonesiaMap({
             minZoom: 4,
             maxZoom: 18,
             zoomControl: true,
+            preferCanvas: true,
+            wheelDebounceTime: 80,
+            wheelPxPerZoomLevel: 90,
         });
+        canvasRenderer.current = L.canvas({ padding: 0.5 });
 
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics, and the GIS User Community',
             maxZoom: 18,
+            updateWhenIdle: true,
+            updateWhenZooming: false,
         }).addTo(map.current);
 
-        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        labelLayer.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Boundaries and labels &copy; Esri',
             maxZoom: 18,
             pane: 'overlayPane',
-        }).addTo(map.current);
+            updateWhenIdle: true,
+            updateWhenZooming: false,
+        });
+
+        const syncLabelLayer = () => {
+            if (!map.current || !labelLayer.current) {
+                return;
+            }
+
+            if (map.current.getZoom() >= 6) {
+                labelLayer.current.addTo(map.current);
+
+                return;
+            }
+
+            labelLayer.current.remove();
+        };
+
+        syncLabelLayer();
+        map.current.on('zoomend', syncLabelLayer);
 
         markerLayer.current = L.layerGroup().addTo(map.current);
 
         return () => {
+            map.current?.off('zoomend', syncLabelLayer);
             map.current?.remove();
             map.current = null;
             markerLayer.current = null;
+            labelLayer.current = null;
+            canvasRenderer.current = null;
         };
     }, []);
 
@@ -462,38 +494,71 @@ export function IndonesiaMap({
             return;
         }
 
+        const token = renderToken.current + 1;
+        let frameId = 0;
+        let index = 0;
+
+        renderToken.current = token;
         markerLayer.current.clearLayers();
-
-        filtered.forEach((marker) => {
-            const icon = L.divIcon({
-                className: '',
-                html: `<span class="block size-3 rounded-full border shadow-lg ${markerColorClass(marker, filters.retailReady)}"></span>`,
-                iconSize: [16, 16],
-                iconAnchor: [8, 8],
-                popupAnchor: [0, -8],
-            });
-
-            L.marker([marker.latitude, marker.longitude], { icon })
-                .bindPopup(popupContent(marker), { maxWidth: 360 })
-                .addTo(markerLayer.current!);
-        });
 
         if (!hasFitInitialBounds.current && filtered.length > 0) {
             hasFitInitialBounds.current = true;
 
             if (filtered.length === 1) {
                 map.current.setView([filtered[0].latitude, filtered[0].longitude], 12);
+            } else {
+                const bounds = L.latLngBounds(filtered.map((marker) => [marker.latitude, marker.longitude] as [number, number]));
+                map.current.fitBounds(bounds, {
+                    maxZoom: 11,
+                    paddingTopLeft: [24, 150],
+                    paddingBottomRight: [300, 40],
+                });
+            }
+        }
 
+        const renderBatch = () => {
+            if (renderToken.current !== token || !markerLayer.current) {
                 return;
             }
 
-            const bounds = L.latLngBounds(filtered.map((marker) => [marker.latitude, marker.longitude] as [number, number]));
-            map.current.fitBounds(bounds, {
-                maxZoom: 11,
-                paddingTopLeft: [24, 150],
-                paddingBottomRight: [300, 40],
-            });
-        }
+            const end = Math.min(index + MARKER_RENDER_BATCH_SIZE, filtered.length);
+
+            for (; index < end; index++) {
+                const marker = filtered[index];
+                const style = markerStyle(marker, filters.retailReady);
+                const circleMarker = L.circleMarker([marker.latitude, marker.longitude], {
+                    radius: 5.5,
+                    stroke: true,
+                    color: style.border,
+                    weight: 0.5,
+                    opacity: 1,
+                    fill: true,
+                    fillColor: style.fill,
+                    fillOpacity: 0.6,
+                    renderer: canvasRenderer.current ?? undefined,
+                    bubblingMouseEvents: false,
+                });
+
+                circleMarker.on('click', () => {
+                    circleMarker
+                        .bindPopup(popupContent(marker), { maxWidth: 360 })
+                        .openPopup();
+                });
+
+                circleMarker.addTo(markerLayer.current);
+            }
+
+            if (index < filtered.length) {
+                frameId = window.requestAnimationFrame(renderBatch);
+            }
+        };
+
+        frameId = window.requestAnimationFrame(renderBatch);
+
+        return () => {
+            renderToken.current++;
+            window.cancelAnimationFrame(frameId);
+        };
     }, [filtered, filters.retailReady]);
 
     const resetFilters = () => {
