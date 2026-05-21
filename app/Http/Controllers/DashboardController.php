@@ -43,6 +43,20 @@ class DashboardController extends Controller
             ])
             ->values();
 
+        $installedBySarpras = Sarpras::query()
+            ->leftJoin('koperasi_sarpras', 'koperasi_sarpras.sarpras_id', '=', 'sarprases.id')
+            ->leftJoin('statuses', 'statuses.id', '=', 'koperasi_sarpras.status_id')
+            ->selectRaw("sarprases.id, sarprases.name, SUM(CASE WHEN statuses.name = 'terpasang' THEN 1 ELSE 0 END) as installed_total")
+            ->groupBy('sarprases.id', 'sarprases.name')
+            ->orderByDesc('installed_total')
+            ->orderBy('sarprases.name')
+            ->get()
+            ->map(fn (Sarpras $sarpras) => [
+                'id' => $sarpras->id,
+                'name' => $sarpras->name,
+                'installed_total' => (int) $sarpras->installed_total,
+            ]);
+
         return Inertia::render('dashboard', [
             'stats' => [
                 'koperasis' => $totalKoperasis,
@@ -51,6 +65,7 @@ class DashboardController extends Controller
                 'completion_percentage' => $completionPercentage,
             ],
             'chart' => $chart,
+            'installed_by_sarpras' => $installedBySarpras,
             'total_sarprases' => $totalSarprases,
         ]);
     }
