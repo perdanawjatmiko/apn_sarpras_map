@@ -40,6 +40,7 @@ class KoperasiSarprasController extends Controller
                 'cities' => [],
                 'districts' => [],
                 'villages' => [],
+                'users' => [],
             ],
         ]);
     }

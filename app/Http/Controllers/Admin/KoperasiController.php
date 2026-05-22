@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\District;
 use App\Models\Koperasi;
+use App\Models\User;
 use App\Models\Village;
 use App\Services\AdminPageService;
 use App\Services\KoperasiService;
@@ -40,6 +41,7 @@ class KoperasiController extends Controller
                 'cities' => City::query()->orderBy('name')->limit(1000)->get(['id', 'name']),
                 'districts' => District::query()->orderBy('name')->limit(1000)->get(['id', 'name']),
                 'villages' => Village::query()->orderBy('name')->limit(1000)->get(['id', 'name']),
+                'users' => User::query()->orderBy('name')->limit(1000)->get(['id', 'name', 'phone']),
             ],
         ]);
     }
@@ -110,6 +112,7 @@ class KoperasiController extends Controller
             'district_id' => ['nullable', 'exists:districts,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
             'latitude' => ['nullable', 'numeric', 'between:-11,6'],
             'longitude' => ['nullable', 'numeric', 'between:95,142'],
             'delivery_percentage' => ['nullable', 'numeric', 'between:0,1'],

@@ -7,6 +7,7 @@ import {
     LayoutGrid,
     MapPinned,
     Package,
+    Tags,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
@@ -45,6 +46,16 @@ const mainNavItems: NavItem[] = [
         title: 'Sarpras Koperasi',
         href: '/admin/koperasi-sarprases',
         icon: Database,
+    },
+    {
+        title: 'Kategori Pengaduan',
+        href: '/admin/pengaduan-categories',
+        icon: Tags,
+    },
+    {
+        title: 'Pengaduan',
+        href: '/admin/pengaduans',
+        icon: BookOpen,
     },
     {
         title: 'User',

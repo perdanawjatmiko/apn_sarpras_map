@@ -13,10 +13,11 @@ trait ProfileValidationRules
      *
      * @return array<string, array<int, ValidationRule|array<mixed>|string>>
      */
-    protected function profileRules(?int $userId = null): array
+    protected function profileRules(int|string|null $userId = null): array
     {
         return [
             'name' => $this->nameRules(),
+            'phone' => $this->phoneRules($userId),
             'email' => $this->emailRules($userId),
         ];
     }
@@ -36,10 +37,27 @@ trait ProfileValidationRules
      *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
-    protected function emailRules(?int $userId = null): array
+    protected function phoneRules(int|string|null $userId = null): array
     {
         return [
             'required',
+            'string',
+            'max:30',
+            $userId === null
+                ? Rule::unique(User::class)
+                : Rule::unique(User::class)->ignore($userId),
+        ];
+    }
+
+    /**
+     * Get the validation rules used to validate user emails.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function emailRules(int|string|null $userId = null): array
+    {
+        return [
+            'nullable',
             'string',
             'email',
             'max:255',

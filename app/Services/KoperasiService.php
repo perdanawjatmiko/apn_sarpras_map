@@ -18,7 +18,7 @@ class KoperasiService
     public function paginated(?string $search = null): LengthAwarePaginator
     {
         return Koperasi::query()
-            ->with(['province:id,name', 'city:id,name', 'district:id,name', 'village:id,name'])
+            ->with(['province:id,name', 'city:id,name', 'district:id,name', 'village:id,name', 'user:id,name,phone'])
             ->when($search, fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('ai_id', 'like', "%{$search}%"))
@@ -98,6 +98,10 @@ class KoperasiService
 
             if (filled($aiId)) {
                 $attributes['ai_id'] = $aiId;
+            }
+
+            if ($usesTemplate && in_array('user_id', $headers, true)) {
+                $attributes['user_id'] = $this->value($headers, $row, 'user_id') ?: null;
             }
 
             $koperasi = Koperasi::updateOrCreate($this->lookupAttributes($aiId, $name), $attributes);

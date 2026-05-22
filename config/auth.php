@@ -114,4 +114,6 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'helpdesk_default_password' => env('HELPDESK_DEFAULT_PASSWORD', 'kdkmp1061'),
+
 ];

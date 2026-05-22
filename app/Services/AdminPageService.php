@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Koperasi;
+use App\Models\Pengaduan;
+use App\Models\PengaduanCategory;
 use App\Models\Sarpras;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +17,8 @@ class AdminPageService
             'users' => User::query()->count(),
             'koperasis' => Koperasi::query()->count(),
             'sarprases' => Sarpras::query()->count(),
+            'kategori_pengaduan' => PengaduanCategory::query()->count(),
+            'pengaduan' => Pengaduan::query()->count(),
             'assigned_sarprases' => Koperasi::query()->has('sarprases')->count(),
         ];
     }

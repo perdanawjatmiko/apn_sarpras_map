@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'district_id',
     'city_id',
     'province_id',
+    'user_id',
     'latitude',
     'longitude',
     'delivery_percentage',
@@ -53,6 +54,11 @@ class Koperasi extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function sarprases(): BelongsToMany

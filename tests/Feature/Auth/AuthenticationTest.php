@@ -24,7 +24,20 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $response = $this->post(route('login.store'), [
-            'email' => $user->email,
+            'phone' => $user->phone,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_users_can_authenticate_using_email_in_the_login_screen()
+    {
+        $user = User::factory()->create();
+
+        $response = $this->post(route('login.store'), [
+            'phone' => $user->email,
             'password' => 'password',
         ]);
 
@@ -50,7 +63,7 @@ class AuthenticationTest extends TestCase
         ])->save();
 
         $response = $this->post(route('login'), [
-            'email' => $user->email,
+            'phone' => $user->phone,
             'password' => 'password',
         ]);
 
@@ -64,7 +77,7 @@ class AuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->post(route('login.store'), [
-            'email' => $user->email,
+            'phone' => $user->phone,
             'password' => 'wrong-password',
         ]);
 
@@ -85,10 +98,10 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+        RateLimiter::increment(md5('login'.implode('|', [$user->phone, '127.0.0.1'])), amount: 5);
 
         $response = $this->post(route('login.store'), [
-            'email' => $user->email,
+            'phone' => $user->phone,
             'password' => 'wrong-password',
         ]);
 

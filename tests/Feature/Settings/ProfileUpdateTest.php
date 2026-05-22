@@ -29,6 +29,7 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
+                'phone' => '089999999999',
                 'email' => 'test@example.com',
             ]);
 
@@ -39,6 +40,7 @@ class ProfileUpdateTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Test User', $user->name);
+        $this->assertSame('089999999999', $user->phone);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
     }
@@ -51,6 +53,7 @@ class ProfileUpdateTest extends TestCase
             ->actingAs($user)
             ->patch(route('profile.update'), [
                 'name' => 'Test User',
+                'phone' => $user->phone,
                 'email' => $user->email,
             ]);
 
@@ -76,7 +79,7 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertSoftDeleted($user);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account()

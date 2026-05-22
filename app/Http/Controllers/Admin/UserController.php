@@ -25,8 +25,11 @@ class UserController extends Controller
             'search' => $search,
             'stats' => $this->admins->dashboard(),
             'records' => User::query()
-                ->select(['id', 'name', 'email', 'created_at'])
-                ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%"))
+                ->select(['id', 'name', 'phone', 'email', 'created_at'])
+                ->when($search, fn ($query) => $query
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%"))
                 ->latest()
                 ->paginate(10)
                 ->withQueryString(),
@@ -37,6 +40,7 @@ class UserController extends Controller
                 'cities' => [],
                 'districts' => [],
                 'villages' => [],
+                'users' => [],
             ],
         ]);
     }
@@ -45,7 +49,8 @@ class UserController extends Controller
     {
         $this->admins->createUser($request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')],
+            'phone' => ['required', 'string', 'max:30', Rule::unique('users')],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users')],
             'password' => ['required', 'string', 'min:8'],
         ]));
 
@@ -56,7 +61,8 @@ class UserController extends Controller
     {
         $this->admins->updateUser($user, $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user)],
+            'phone' => ['required', 'string', 'max:30', Rule::unique('users')->ignore($user)],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users')->ignore($user)],
             'password' => ['nullable', 'string', 'min:8'],
         ]));
 

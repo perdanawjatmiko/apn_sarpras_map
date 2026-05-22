@@ -3,15 +3,27 @@
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\KoperasiController;
 use App\Http\Controllers\Admin\KoperasiSarprasController;
+use App\Http\Controllers\Admin\PengaduanCategoryController;
+use App\Http\Controllers\Admin\PengaduanController;
 use App\Http\Controllers\Admin\SarprasController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HelpdeskController;
 use App\Http\Controllers\KoperasiDetailController;
 use App\Http\Controllers\PublicMapController;
 use App\Http\Controllers\RegionOptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [PublicMapController::class, 'index'])->name('home');
+Route::get('/helpdesk', [HelpdeskController::class, 'index'])->name('helpdesk.index');
+Route::get('/helpdesk/cities', [HelpdeskController::class, 'cities'])->name('helpdesk.cities');
+Route::get('/helpdesk/districts', [HelpdeskController::class, 'districts'])->name('helpdesk.districts');
+Route::get('/helpdesk/villages', [HelpdeskController::class, 'villages'])->name('helpdesk.villages');
+Route::get('/helpdesk/koperasis', [HelpdeskController::class, 'koperasis'])->name('helpdesk.koperasis');
+Route::post('/helpdesk/register', [HelpdeskController::class, 'store'])->name('helpdesk.store');
+Route::post('/helpdesk/login', [HelpdeskController::class, 'login'])->middleware('guest')->name('helpdesk.login');
+Route::get('/helpdesk/dashboard', [HelpdeskController::class, 'dashboard'])->middleware('auth')->name('helpdesk.dashboard');
+Route::post('/helpdesk/pengaduans', [HelpdeskController::class, 'storePengaduan'])->middleware('auth')->name('helpdesk.pengaduans.store');
 Route::get('/koperasis/{koperasi}', KoperasiDetailController::class)->name('koperasis.show');
 Route::prefix('api/regions')->name('api.regions.')->group(function () {
     Route::get('provinces', [RegionOptionController::class, 'provinces'])->name('provinces');
@@ -32,6 +44,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('koperasis', KoperasiController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::post('sarprases/import', [SarprasController::class, 'import'])->name('sarprases.import');
         Route::resource('sarprases', SarprasController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('pengaduan-categories', PengaduanCategoryController::class)
+            ->parameters(['pengaduan-categories' => 'pengaduanCategory'])
+            ->only(['index', 'store', 'update', 'destroy']);
+        Route::resource('pengaduans', PengaduanController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('koperasi-sarprases/template.csv', [KoperasiSarprasController::class, 'templateCsv'])->name('koperasi-sarprases.template.csv');
         Route::get('koperasi-sarprases/template.xlsx', [KoperasiSarprasController::class, 'templateXlsx'])->name('koperasi-sarprases.template.xlsx');
         Route::post('koperasi-sarprases/import', [KoperasiSarprasController::class, 'import'])->name('koperasi-sarprases.import');

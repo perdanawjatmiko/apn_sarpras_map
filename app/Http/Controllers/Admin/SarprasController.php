@@ -38,6 +38,7 @@ class SarprasController extends Controller
                 'cities' => [],
                 'districts' => [],
                 'villages' => [],
+                'users' => [],
             ],
         ]);
     }
