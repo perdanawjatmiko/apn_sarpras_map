@@ -91,6 +91,30 @@ class HelpdeskTest extends TestCase
         $this->assertSame($user->id, $koperasi->refresh()->user_id);
     }
 
+    public function test_helpdesk_cannot_register_pic_for_koperasi_that_already_has_user()
+    {
+        $existingUser = User::factory()->create();
+        $koperasi = Koperasi::create([
+            'name' => 'Koperasi Contoh',
+            'user_id' => $existingUser->id,
+        ]);
+
+        $this->post(route('helpdesk.store'), [
+            'koperasi_id' => $koperasi->id,
+            'name' => 'PIC Baru',
+            'phone' => '081234567890',
+        ])
+            ->assertSessionHasErrors([
+                'koperasi_id' => 'Koperasi ini sudah memiliki user/PIC.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame($existingUser->id, $koperasi->refresh()->user_id);
+        $this->assertDatabaseMissing('users', [
+            'phone' => '081234567890',
+        ]);
+    }
+
     public function test_helpdesk_user_can_login_and_view_dashboard()
     {
         $user = User::factory()->create([

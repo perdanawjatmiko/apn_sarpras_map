@@ -66,14 +66,14 @@ class PengaduanController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        Pengaduan::create($this->validated($request));
+        Pengaduan::create($this->validatedForStore($request));
 
         return back()->with('success', 'Pengaduan dibuat.');
     }
 
     public function update(Request $request, Pengaduan $pengaduan): RedirectResponse
     {
-        $pengaduan->update($this->validated($request));
+        $pengaduan->update($this->validatedForUpdate($request, $pengaduan));
 
         return back()->with('success', 'Pengaduan diperbarui.');
     }
@@ -88,11 +88,10 @@ class PengaduanController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validated(Request $request): array
+    private function validatedForStore(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'ticket_id' => ['nullable', 'string', 'max:255'],
-            'ticket_date' => ['nullable', 'date'],
             'reporter_user_id' => ['nullable', 'exists:users,id'],
             'reporter_name' => ['required', 'string', 'max:255'],
             'reporter_phone' => ['required', 'string', 'max:30'],
@@ -106,14 +105,50 @@ class PengaduanController extends Controller
             'detail' => ['required', 'string'],
             'pic_helpdesk_id' => ['nullable', 'exists:users,id'],
             'status' => ['sometimes', 'required', Rule::in(Pengaduan::STATUSES)],
-            'assigned_at' => ['nullable', 'date'],
-            'completed_at' => ['nullable', 'date'],
             'sla_days' => ['nullable', 'integer', 'min:0'],
             'progress_percentage' => ['sometimes', 'required', 'integer', 'between:0,100'],
             'resolution' => ['nullable', 'string'],
             'attachment_link' => ['nullable', 'url', 'max:2048'],
-            'last_update_at' => ['nullable', 'date'],
         ]);
+
+        if (filled($data['pic_helpdesk_id'] ?? null)) {
+            $data['assigned_at'] = now();
+        }
+
+        if (($data['status'] ?? null) === 'ditutup') {
+            $data['completed_at'] = now();
+        }
+
+        return $data;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function validatedForUpdate(Request $request, Pengaduan $pengaduan): array
+    {
+        $data = $request->validate([
+            'category_id' => ['nullable', 'exists:pengaduan_categories,id'],
+            'sub_category_id' => ['nullable', 'exists:pengaduan_categories,id'],
+            'pic_helpdesk_id' => ['nullable', 'exists:users,id'],
+            'status' => ['sometimes', 'required', Rule::in(Pengaduan::STATUSES)],
+        ]);
+
+        foreach (['category_id', 'sub_category_id', 'pic_helpdesk_id'] as $key) {
+            if (array_key_exists($key, $data) && blank($data[$key])) {
+                $data[$key] = null;
+            }
+        }
+
+        if (array_key_exists('pic_helpdesk_id', $data) && $pengaduan->pic_helpdesk_id !== $data['pic_helpdesk_id']) {
+            $data['assigned_at'] = filled($data['pic_helpdesk_id']) ? now() : null;
+        }
+
+        if (array_key_exists('status', $data) && $pengaduan->status !== $data['status']) {
+            $data['completed_at'] = $data['status'] === 'ditutup' ? now() : null;
+        }
+
+        return $data;
     }
 
     /**

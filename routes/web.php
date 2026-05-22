@@ -33,7 +33,7 @@ Route::prefix('api/regions')->name('api.regions.')->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('dashboard', DashboardController::class)->middleware('role:superadmin')->name('dashboard');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', AdminController::class)->name('index');
@@ -54,7 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('koperasi-sarprases', KoperasiSarprasController::class)
             ->parameters(['koperasi-sarprases' => 'koperasiSarpras'])
             ->only(['index', 'store', 'update', 'destroy']);
-    });
+    })->middleware('role:superadmin');
 });
 
 require __DIR__.'/settings.php';

@@ -11,9 +11,17 @@ import { logout } from '@/routes';
 import { storePengaduan } from '@/actions/App/Http/Controllers/HelpdeskController';
 import { Button } from '@/components/ui/button';
 import InputError from '@/components/input-error';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 
 type Report = {
@@ -52,6 +60,7 @@ function statusClass(status: string) {
 }
 
 export default function HelpdeskDashboard({ stats, reports, user }: Props) {
+    const [photoReport, setPhotoReport] = useState<Report | null>(null);
     const form = useForm<{
         title: string;
         detail: string;
@@ -95,7 +104,7 @@ export default function HelpdeskDashboard({ stats, reports, user }: Props) {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                            <Button
+                            {/* <Button
                                 asChild
                                 className="h-11 bg-emerald-600 hover:bg-emerald-700"
                             >
@@ -103,8 +112,12 @@ export default function HelpdeskDashboard({ stats, reports, user }: Props) {
                                     <Plus />
                                     Buat Laporan
                                 </Link>
-                            </Button>
-                            <Button asChild variant="outline" className="h-11">
+                            </Button> */}
+                            <Button
+                                asChild
+                                variant="outline"
+                                className="h-11 w-full"
+                            >
                                 <Link href={logout()} method="post" as="button">
                                     <LogOut />
                                     Keluar
@@ -264,14 +277,15 @@ export default function HelpdeskDashboard({ stats, reports, user }: Props) {
                                             {report.detail}
                                         </p>
                                         {report.attachment_url && (
-                                            <a
-                                                href={report.attachment_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-base font-medium text-emerald-700 underline"
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setPhotoReport(report)
+                                                }
+                                                className="w-fit text-base font-medium text-emerald-700 underline underline-offset-4"
                                             >
                                                 Lihat foto
-                                            </a>
+                                            </button>
                                         )}
                                     </div>
                                     <div className="text-base text-zinc-500">
@@ -281,6 +295,30 @@ export default function HelpdeskDashboard({ stats, reports, user }: Props) {
                             ))}
                         </div>
                     </section>
+                    <Dialog
+                        open={Boolean(photoReport)}
+                        onOpenChange={(open) => !open && setPhotoReport(null)}
+                    >
+                        <DialogContent className="sm:max-w-3xl">
+                            <DialogHeader>
+                                <DialogTitle>
+                                    Foto Laporan {photoReport?.id}
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {photoReport?.title}
+                                </DialogDescription>
+                            </DialogHeader>
+                            {photoReport?.attachment_url && (
+                                <div className="max-h-[70vh] overflow-auto rounded-md border bg-zinc-50">
+                                    <img
+                                        src={photoReport.attachment_url}
+                                        alt={`Foto laporan ${photoReport.id}`}
+                                        className="h-auto w-full object-contain"
+                                    />
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </main>
         </>

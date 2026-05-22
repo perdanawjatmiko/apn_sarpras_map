@@ -247,12 +247,69 @@ function PengaduanForm({
             : '/admin/pengaduans';
         const method = isEdit ? form.put : form.post;
 
+        form.transform((data) =>
+            isEdit
+                ? {
+                      category_id: data.category_id,
+                      sub_category_id: data.sub_category_id,
+                      pic_helpdesk_id: data.pic_helpdesk_id,
+                      status: data.status,
+                  }
+                : data,
+        );
+
         method(url, {
             preserveScroll: true,
             preserveState: false,
             onSuccess: onDone,
         });
     };
+
+    if (isEdit) {
+        return (
+            <form onSubmit={submit} className="grid gap-3">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <SelectField
+                        label="Kategori"
+                        value={form.data.category_id}
+                        options={options.categories ?? []}
+                        onChange={(value) => form.setData('category_id', value)}
+                        error={form.errors.category_id}
+                    />
+                    <SelectField
+                        label="Sub kategori"
+                        value={form.data.sub_category_id}
+                        options={options.sub_categories ?? []}
+                        onChange={(value) =>
+                            form.setData('sub_category_id', value)
+                        }
+                        error={form.errors.sub_category_id}
+                    />
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                    <SelectField
+                        label="PIC Helpdesk"
+                        value={form.data.pic_helpdesk_id}
+                        options={options.users}
+                        onChange={(value) =>
+                            form.setData('pic_helpdesk_id', value)
+                        }
+                        error={form.errors.pic_helpdesk_id}
+                    />
+                    <SelectField
+                        label="Status"
+                        value={form.data.status}
+                        options={options.complaint_statuses ?? []}
+                        onChange={(value) => form.setData('status', value)}
+                        error={form.errors.status}
+                    />
+                </div>
+                <Button disabled={form.processing} className="mt-2">
+                    Simpan perubahan
+                </Button>
+            </form>
+        );
+    }
 
     return (
         <form onSubmit={submit} className="grid gap-3">
@@ -262,13 +319,6 @@ function PengaduanForm({
                     value={form.data.ticket_id}
                     onChange={(value) => form.setData('ticket_id', value)}
                     error={form.errors.ticket_id}
-                />
-                <Field
-                    label="Tanggal tiket"
-                    type="datetime-local"
-                    value={form.data.ticket_date}
-                    onChange={(value) => form.setData('ticket_date', value)}
-                    error={form.errors.ticket_date}
                 />
             </div>
             <div className="grid gap-3 md:grid-cols-3">
@@ -359,27 +409,13 @@ function PengaduanForm({
                 onChange={(value) => form.setData('detail', value)}
                 error={form.errors.detail}
             />
-            <div className="grid gap-3 md:grid-cols-4">
+            <div className="grid gap-3 md:grid-cols-2">
                 <SelectField
                     label="PIC Helpdesk"
                     value={form.data.pic_helpdesk_id}
                     options={options.users}
                     onChange={(value) => form.setData('pic_helpdesk_id', value)}
                     error={form.errors.pic_helpdesk_id}
-                />
-                <Field
-                    label="Tanggal assign"
-                    type="datetime-local"
-                    value={form.data.assigned_at}
-                    onChange={(value) => form.setData('assigned_at', value)}
-                    error={form.errors.assigned_at}
-                />
-                <Field
-                    label="Tanggal selesai"
-                    type="datetime-local"
-                    value={form.data.completed_at}
-                    onChange={(value) => form.setData('completed_at', value)}
-                    error={form.errors.completed_at}
                 />
                 <Field
                     label="SLA (Hari)"
@@ -412,13 +448,6 @@ function PengaduanForm({
                 value={form.data.resolution}
                 onChange={(value) => form.setData('resolution', value)}
                 error={form.errors.resolution}
-            />
-            <Field
-                label="Last Update"
-                type="datetime-local"
-                value={form.data.last_update_at}
-                onChange={(value) => form.setData('last_update_at', value)}
-                error={form.errors.last_update_at}
             />
             <Button disabled={form.processing} className="mt-2">
                 {isEdit ? 'Simpan perubahan' : 'Tambah data'}
@@ -925,13 +954,6 @@ function CategoryAssignmentDialog({
     onOpenChange: (open: boolean) => void;
 }) {
     const form = useForm({
-        reporter_name: row?.reporter_name ?? '',
-        reporter_phone: row?.reporter_phone ?? '',
-        priority: row?.priority ?? 'normal',
-        title: row?.title ?? '',
-        detail: row?.detail ?? '',
-        status: row?.status ?? 'baru',
-        progress_percentage: row?.progress_percentage ?? 0,
         category_id: row?.category_id ?? row?.category?.id ?? '',
         sub_category_id: row?.sub_category_id ?? row?.sub_category?.id ?? '',
     });
@@ -1091,12 +1113,11 @@ function columns(tab: Tab) {
     if (tab === 'pengaduans') {
         return [
             'ticket_id',
-            'ticket_date',
+            'title',
             'reporter_name',
             'reporter_phone',
             'koperasi',
-            'province',
-            'city',
+
             'category',
             'sub_category',
         ];

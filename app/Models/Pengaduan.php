@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -57,13 +58,27 @@ class Pengaduan extends Model
     {
         static::creating(function (Pengaduan $pengaduan) {
             $pengaduan->ticket_id ??= self::nextTicketId();
-            $pengaduan->ticket_date ??= now();
+            $pengaduan->ticket_date ??= $pengaduan->created_at ?? now();
             $pengaduan->last_update_at ??= now();
         });
 
         static::saving(function (Pengaduan $pengaduan) {
             $pengaduan->last_update_at = now();
         });
+    }
+
+    protected function ticketDate(): Attribute
+    {
+        return Attribute::get(
+            fn ($value) => $this->created_at ?? ($value ? $this->asDateTime($value) : null),
+        );
+    }
+
+    protected function lastUpdateAt(): Attribute
+    {
+        return Attribute::get(
+            fn ($value) => $this->updated_at ?? ($value ? $this->asDateTime($value) : null),
+        );
     }
 
     public static function nextTicketId(): string

@@ -1,12 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import {
-    Building2,
-    ClipboardList,
-    LogIn,
-    Phone,
-    Search,
-    UserPlus,
-} from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import {
@@ -63,24 +56,6 @@ type RegionFilters = {
     district_id?: string;
     village_id?: string;
 };
-
-const dummyActions = [
-    {
-        label: 'Buat Pengaduan',
-        description: 'Lapor kendala koperasi',
-        icon: ClipboardList,
-    },
-    {
-        label: 'Cek Laporan',
-        description: 'Lihat status pengaduan',
-        icon: Search,
-    },
-    {
-        label: 'Hubungi Petugas',
-        description: 'Minta bantuan langsung',
-        icon: Phone,
-    },
-];
 
 const tabs = [
     { key: 'register', label: 'Daftar Akun', icon: UserPlus },
@@ -303,6 +278,16 @@ export default function Helpdesk({
 
     const submit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (selectedKoperasi?.user_id) {
+            form.setError(
+                'koperasi_id',
+                'Koperasi ini sudah memiliki user/PIC.',
+            );
+
+            return;
+        }
+
         form.post(store.url(), {
             preserveScroll: true,
             onSuccess: () => form.reset(),
@@ -335,53 +320,11 @@ export default function Helpdesk({
                                     Helpdesk Koperasi Desa
                                 </h1>
                                 <p className="text-base leading-7 text-zinc-600">
-                                    Pilih layanan, pilih wilayah koperasi, lalu
-                                    isi nama dan nomor handphone. Petugas akan
-                                    memakai data ini untuk membantu koperasi.
+                                    Daftarkan PIC koperasi atau masuk dengan
+                                    akun yang sudah tersedia untuk mengirim dan
+                                    memantau pengaduan.
                                 </p>
                             </div>
-                        </div>
-                    </section>
-
-                    <section className="grid gap-3">
-                        <h2 className="text-lg font-semibold">Pilih layanan</h2>
-                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <button
-                                type="button"
-                                className="flex min-h-28 flex-col items-start justify-between rounded-lg border-2 border-emerald-600 bg-emerald-50 p-4 text-left"
-                            >
-                                <Building2 className="size-6 text-emerald-700" />
-                                <span className="grid gap-1">
-                                    <span className="text-base font-semibold">
-                                        Daftar PIC
-                                    </span>
-                                    <span className="text-sm text-zinc-600">
-                                        Isi data penanggung jawab koperasi
-                                    </span>
-                                </span>
-                            </button>
-                            {dummyActions.map((action) => {
-                                const Icon = action.icon;
-
-                                return (
-                                    <button
-                                        key={action.label}
-                                        type="button"
-                                        disabled
-                                        className="flex min-h-28 flex-col items-start justify-between rounded-lg border bg-zinc-50 p-4 text-left opacity-70"
-                                    >
-                                        <Icon className="size-6 text-zinc-500" />
-                                        <span className="grid gap-1">
-                                            <span className="text-base font-semibold">
-                                                {action.label}
-                                            </span>
-                                            <span className="text-sm text-zinc-600">
-                                                {action.description}
-                                            </span>
-                                        </span>
-                                    </button>
-                                );
-                            })}
                         </div>
                     </section>
 
@@ -420,13 +363,20 @@ export default function Helpdesk({
                     {activeTab === 'login' && (
                         <Card className="rounded-lg border-zinc-200 shadow-xs">
                             <CardHeader>
-                                <CardTitle className="text-xl">
-                                    Masuk ke Akun Helpdesk
-                                </CardTitle>
-                                <CardDescription className="text-base">
-                                    Gunakan nomor handphone dan password yang
-                                    sudah diberikan.
-                                </CardDescription>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-700">
+                                        <LogIn className="size-5" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-xl">
+                                            Masuk ke Akun Helpdesk
+                                        </CardTitle>
+                                        <CardDescription className="text-base">
+                                            Gunakan nomor handphone atau email
+                                            dan password yang sudah diberikan.
+                                        </CardDescription>
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
                                 <form
@@ -565,10 +515,9 @@ export default function Helpdesk({
                                         }
                                     />
                                     {selectedKoperasi?.user_id && (
-                                        <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-3 text-base leading-6 text-amber-900">
-                                            Catatan: koperasi ini sudah punya
-                                            PIC. Jika dilanjutkan, PIC lama akan
-                                            diganti.
+                                        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-3 text-base leading-6 text-red-900">
+                                            Koperasi ini sudah memiliki user/PIC
+                                            dan tidak bisa dibuatkan akun baru.
                                         </p>
                                     )}
                                 </CardContent>
@@ -650,7 +599,10 @@ export default function Helpdesk({
                             <div className="sticky bottom-0 -mx-4 border-t bg-white/95 p-4 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0">
                                 <Button
                                     type="submit"
-                                    disabled={form.processing}
+                                    disabled={
+                                        form.processing ||
+                                        Boolean(selectedKoperasi?.user_id)
+                                    }
                                     className="h-12 w-full bg-emerald-600 text-base font-semibold hover:bg-emerald-700"
                                 >
                                     {form.processing && <Spinner />}

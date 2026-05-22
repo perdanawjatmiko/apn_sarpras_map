@@ -9,6 +9,7 @@ use App\Models\PengaduanCategory;
 use App\Models\Province;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -44,6 +45,7 @@ class PengaduanTest extends TestCase
             'phone' => '081234567890',
         ]);
         $picHelpdesk = User::factory()->create();
+        $newPicHelpdesk = User::factory()->create();
         $province = Province::create(['name' => 'Jawa Tengah', 'code' => '33']);
         $city = City::create(['name' => 'Semarang', 'code' => '74', 'full_code' => '33.74', 'province_id' => $province->id]);
         $koperasi = Koperasi::create([
@@ -78,23 +80,48 @@ class PengaduanTest extends TestCase
 
         $this->assertSame('tinggi', $pengaduan->priority);
         $this->assertSame($subCategory->id, $pengaduan->sub_category_id);
+        $this->assertNotNull($pengaduan->assigned_at);
+
+        Carbon::setTestNow(now()->addHour()->startOfSecond());
 
         $this->put(route('admin.pengaduans.update', $pengaduan), [
+            'reporter_user_id' => null,
             'reporter_name' => $reporter->name,
             'reporter_phone' => $reporter->phone,
+            'koperasi_id' => null,
+            'province_id' => null,
+            'city_id' => null,
+            'category_id' => null,
+            'sub_category_id' => null,
+            'pic_helpdesk_id' => $newPicHelpdesk->id,
             'priority' => 'normal',
             'title' => 'CCTV mati diperbarui',
             'detail' => 'Kabel adaptor rusak.',
-            'status' => 'selesai',
+            'status' => 'ditutup',
             'progress_percentage' => 100,
             'resolution' => 'Adaptor diganti.',
         ])->assertRedirect();
 
         $pengaduan->refresh();
 
-        $this->assertSame('CCTV mati diperbarui', $pengaduan->title);
-        $this->assertSame('selesai', $pengaduan->status);
-        $this->assertSame(100, $pengaduan->progress_percentage);
+        $this->assertNull($pengaduan->category_id);
+        $this->assertNull($pengaduan->sub_category_id);
+        $this->assertSame($newPicHelpdesk->id, $pengaduan->pic_helpdesk_id);
+        $this->assertSame('ditutup', $pengaduan->status);
+        $this->assertTrue($pengaduan->assigned_at->is(Carbon::getTestNow()));
+        $this->assertTrue($pengaduan->completed_at->is(Carbon::getTestNow()));
+        $this->assertSame($reporter->id, $pengaduan->reporter_user_id);
+        $this->assertSame($reporter->name, $pengaduan->reporter_name);
+        $this->assertSame($koperasi->id, $pengaduan->koperasi_id);
+        $this->assertSame($province->id, $pengaduan->province_id);
+        $this->assertSame($city->id, $pengaduan->city_id);
+        $this->assertSame('tinggi', $pengaduan->priority);
+        $this->assertSame('CCTV mati', $pengaduan->title);
+        $this->assertSame('CCTV tidak menyala.', $pengaduan->detail);
+        $this->assertSame(25, $pengaduan->progress_percentage);
+        $this->assertSame('Menunggu teknisi.', $pengaduan->resolution);
+
+        Carbon::setTestNow();
 
         $this->delete(route('admin.pengaduans.destroy', $pengaduan))
             ->assertRedirect();

@@ -220,15 +220,24 @@ class HelpdeskController extends Controller
         ]);
 
         DB::transaction(function () use ($data) {
+            $koperasi = Koperasi::query()
+                ->whereKey($data['koperasi_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if (filled($koperasi->user_id)) {
+                throw ValidationException::withMessages([
+                    'koperasi_id' => 'Koperasi ini sudah memiliki user/PIC.',
+                ]);
+            }
+
             $user = User::create([
                 'name' => $data['name'],
                 'phone' => $data['phone'],
                 'password' => config('auth.helpdesk_default_password'),
             ]);
 
-            Koperasi::query()
-                ->whereKey($data['koperasi_id'])
-                ->update(['user_id' => $user->id]);
+            $koperasi->update(['user_id' => $user->id]);
         });
 
         return back()->with('success', 'Akun PIC koperasi berhasil dibuat.');
